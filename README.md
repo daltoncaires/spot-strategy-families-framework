@@ -1,1 +1,0 @@
-# spot-strategy-families-framework
