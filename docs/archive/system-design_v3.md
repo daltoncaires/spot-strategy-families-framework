@@ -2,44 +2,23 @@
 
 ## 1. Visão Geral do Projeto
 
-Este documento descreve um **framework de famílias de estratégias de trading sistemático** voltado para mercados **spot** (inicialmente cripto, com foco em Binance Spot), orientado a **retorno ajustado ao risco** e projetado para operar em **single node**, porém com arquitetura preparada para **multi-exchange**.
+Este documento descreve um **framework de famílias de estratégias de trading sistemático** voltado para mercados **spot** (inicialmente cripto, com foco em Binance Spot). Ele é projetado para operar em **single node**, com uma arquitetura preparada para **multi-exchange**.
 
-Em vez de ser apenas “mais um bot de trading”, o projeto se propõe a ser uma **plataforma estruturada** onde:
+O projeto é uma **plataforma estruturada** onde:
 
-* Famílias de estratégias com **evidência histórica robusta** (Trend Following, Dual Momentum, Cross-Sectional etc.) são implementadas de forma consistente;
-* Há um **núcleo comum de risco, execução, dados e observabilidade**;
-* Cada estratégia passa por um ciclo disciplinado de **pesquisa → backtest → paper trading → produção → monitoramento → eventual aposentadoria**.
-
-A prioridade central é: **maximizar retorno ajustado ao risco, com disciplina de gestão de risco e governança**, evitando tanto improvisos operacionais quanto complexidade desnecessária para o contexto single node.
+*   Famílias de estratégias (Trend Following, Dual Momentum, etc.) são implementadas de forma consistente.
+*   Há um **núcleo comum de risco, execução, dados e observabilidade**.
+*   Cada estratégia passa por um ciclo disciplinado de **pesquisa → backtest → paper trading → produção → monitoramento → eventual aposentadoria**.
 
 ---
 
 ### 1.1. Contexto
 
-Os mercados de cripto, FX e ações spot oferecem uma grande variedade de oportunidades, mas também exibem:
+Os mercados de cripto, FX e ações spot exibem:
 
 * Volatilidade elevada;
 * Mudanças de regime frequentes;
 * Risco de cauda significativo.
-
-Paralelamente, a literatura acadêmica e empírica acumulou décadas de evidência sobre famílias de estratégias que apresentam, de forma relativamente consistente, **prêmios de risco e anomalias exploráveis**, como:
-
-* **Time-Series Momentum (Trend Following)**;
-* **Dual Momentum (TSM + Cross-Sectional)**;
-* **Cross-Sectional Momentum**;
-* Abordagens de **Value/Quality** em ações;
-* **Mean Reversion** de curto prazo;
-* Estratégias de **Carry/Yield/Basis**, quando a infraestrutura permite.
-
-No entanto, na prática, muitos sistemas de trading “domésticos” misturam:
-
-* Estratégias pouco testadas ou mal documentadas;
-* Gestão de risco ad hoc;
-* Falta de rastreabilidade das decisões;
-* Acoplamento excessivo entre lógica de estratégia e infraestrutura (exchange, banco de dados, etc.).
-
-Este projeto nasce justamente para **organizar** esse cenário: pegar o que há de mais sólido em termos de famílias de estratégias e encaixar dentro de uma arquitetura clara, extensível e operável em um ambiente realista (single node, uma exchange principal, sem HFT).
-
 ---
 
 ### 1.2. Objetivo Principal
@@ -98,26 +77,13 @@ O **escopo inicial (MVP expandido)** do projeto abrange:
 
 ### 1.4. Não-Escopo (fora do MVP)
 
-Alguns itens são explicitamente considerados **fora do escopo inicial** (embora possam ser considerados em fases futuras):
+Os seguintes itens são explicitamente considerados **fora do escopo inicial**:
 
-* **High-Frequency Trading (HFT) ou colocation**
-
-  * Estratégias que exigem latência de microssegundos/milissegundos e acesso ultrabaixo nível à infraestrutura da exchange.
-
-* **Derivativos Complexos**
-
-  * Uso intensivo de futuros alavancados, opções estruturadas, spreads complexos, etc., como parte do núcleo do sistema.
-  * Estratégias desse tipo só serão consideradas como módulos adicionais, depois que o framework spot estiver consolidado.
-
-* **Gestão de Capital de Terceiros**
-
-  * O sistema é desenhado como **trading proprietário** (capital próprio).
-  * Qualquer evolução para operar recursos de terceiros ou prestar serviços de investimento exigirá avaliação regulatória e ajustes específicos (compliance ampliado).
-
-* **Sistemas Distribuídos de Alta Complexidade**
-
-  * No MVP, não há cluster de múltiplos nós, balanceadores de carga distribuídos ou arquitetura de microserviços full.
-  * A prioridade é **robustez em single node**, com desenho que não impeça expansão futura.
+*   **High-Frequency Trading (HFT) ou colocation**.
+*   **Derivativos Complexos** (futuros alavancados, opções estruturadas, etc.).
+*   **Gestão de Capital de Terceiros**.
+*   **Sistemas Distribuídos de Alta Complexidade** (clusters, microserviços).
+*   **Automação de Estratégias Puramente Discricionárias**.
 
 * **Automação de Estratégias Puramente Discricionárias**
 
@@ -171,21 +137,9 @@ O projeto se apoia em algumas **premissas** e está sujeito a certas **restriç�
 
 **Premissas**
 
-* O ambiente alvo é **single node**, com recursos suficientes (CPU/RAM/SSD) para:
-
-  * Rodar estratégias em timeframes de minutos a dias;
-  * Manter dados históricos locais para backtests;
-  * Coletar e processar dados em tempo quase real.
-
-* A **exchanges são tratadas como “fonte de verdade”** para:
-
-  * Lista de símbolos, filtros de lote/notional, timeframes, tipos de ordem;
-  * Disponibilidade de mercado (status de trading, pausas, delistings).
-
-* As **famílias de estratégias** são baseadas em:
-
-  * Evidência histórica robusta (papers, estudos, experiência prática);
-  * Regras claras, sem “magia” ou sinais opacos.
+*   O ambiente alvo é **single node** com recursos suficientes (CPU/RAM/SSD).
+*   A **API da exchange é a "fonte da verdade"** para o universo de mercados (símbolos, filtros, timeframes).
+*   As **famílias de estratégias** são baseadas em regras claras e documentadas.
 
 * O foco é **spot long/flat**, sem dependência de alavancagem, margin ou derivativos para que a estratégia faça sentido.
 
@@ -210,11 +164,10 @@ O projeto se apoia em algumas **premissas** e está sujeito a certas **restriç�
 
 Em resumo, a **Visão Geral do Projeto** define um framework que:
 
-* Nasce pragmático (single node, uma exchange, foco em spot long/flat);
-* Se ancora em famílias de estratégias com forte evidência de retorno ajustado ao risco;
-* Coloca gestão de risco, governança e observabilidade no mesmo nível de importância que a “inteligência” das estratégias;
-* Se prepara, desde o desenho inicial, para crescer em complexidade (mais estratégias, mais exchanges, mais ativos) sem perder clareza e controle.
-
+*   É pragmático (single node, uma exchange, foco em spot long/flat).
+*   É ancorado em famílias de estratégias sistemáticas.
+*   Prioriza gestão de risco, governança e observabilidade.
+*   É projetado para evoluir em complexidade (mais estratégias, mais exchanges) de forma controlada.
 
 ## 2. Requisitos e Premissas do Sistema
 
@@ -232,7 +185,10 @@ Os requisitos funcionais descrevem as capacidades concretas que o sistema precis
 * O sistema deve permitir **registrar e executar famílias de estratégias** (TSM, Dual Momentum, Cross-Sectional, Carry/Yield/Basis, Value/Quality, Mean Reversion, Market Making).
 * Cada família pode ter **múltiplas instâncias** (variações de parâmetros, conjuntos de ativos, timeframes).
 * Estratégias devem operar em modo **spot long/flat**, gerando **posições alvo** (porcentagem de alocação por mercado), e não ordens brutas.
+* A posição alvo (ex: 100% alocado) é traduzida em valor nocional pelo **Módulo de Risco e Alocação**, que gerencia o capital disponível na moeda de cotação (`quote_asset`, ex: USDT) daquele mercado.
 
+* **Validação de Lookback Mínimo**: Na fase de `prepare()` de cada estratégia, o sistema deve automaticamente calcular e verificar se o histórico de dados disponível atende aos `lookbacks mínimos` declarados pela estratégia. Caso contrário, um erro ou alerta crítico deve ser emitido, impedindo a execução da estratégia com dados insuficientes.
+ 
 #### 2.1.2. Suporte a Ciclo Completo: Backtest → Paper → Live
 
 O sistema deve suportar três modos principais para cada instância de estratégia:
@@ -267,6 +223,10 @@ A mudança de modo deve ser controlada por configuração e registrada em trilha
   * Calcule indicadores e features necessárias para cada família (retornos, volatilidade, ranks, indicadores técnicos, etc.);
   * Garanta que as estratégias só recebam dados com **lookback suficiente**.
 
+* Deve haver uma **Política de Saneamento de Dados** explícita:
+  * Se um dado é marcado como `BAD` (ex: gap de candle irrecuperável), a estratégia para aquele ativo não deve rodar e um alerta deve ser emitido.
+  * Se um dado é `QUESTIONABLE` (ex: outlier de volume), o sistema deve logar o evento e, por padrão, tentar usar o último dado válido conhecido, sinalizando a incerteza na trilha de auditoria.
+
 #### 2.1.5. Gestão de Risco Multicamadas
 
 O sistema deve possuir um módulo de risco desacoplado da estratégia, capaz de:
@@ -281,8 +241,8 @@ O sistema deve possuir um módulo de risco desacoplado da estratégia, capaz de:
   * Globalmente (portfólio total).
 * Implementar **circuit breakers**:
 
-  * Locais (por estratégia/família);
-  * Globais (parar o sistema ou entrar em modo seguro em caso de drawdown extremo ou incidentes).
+  * **Locais**: Desativar uma instância de estratégia se seu drawdown atingir um limite configurado (ex: `CB_STRATEGY_MAX_DRAWDOWN = 15%`).
+  * **Globais**: Parar todas as operações (modo "somente saídas") se a perda diária do portfólio total exceder um limite crítico (ex: `CB_GLOBAL_DAILY_LOSS = 5%`).
 
 Esse módulo deve atuar como **filtro obrigatório** entre sinais de estratégia e execução de ordens.
 
@@ -292,6 +252,7 @@ Esse módulo deve atuar como **filtro obrigatório** entre sinais de estratégia
 
   * Traduzir posições alvo em **ordens spot concretas** (compra/venda) compatíveis com os filtros da exchange (lote mínimo, step, notional mínimo);
   * Enviar ordens via API da exchange (Binance Spot no MVP);
+  * Calcular e registrar os **custos de transação** (fees) para cada `fill`, com base nas regras da exchange (maker/taker), e estimar o **slippage** (diferença entre preço esperado e executado).
   * Lidar com:
 
     * Respostas de sucesso;
@@ -306,12 +267,15 @@ Esse módulo deve atuar como **filtro obrigatório** entre sinais de estratégia
 
 #### 2.1.7. Persistência de Estado Operacional
 
-O sistema deve **persistir**:
+O sistema deve **persistir seu estado operacional** para garantir recuperação após falhas e para auditoria. A arquitetura de estado é dividida em:
 
-* Posições abertas por ativo, por estratégia, por família;
-* Ordens abertas e histórico de ordens/fills;
-* P&L realizado e não realizado;
-* Estado de risco (uso de budgets, drawdowns, exposições).
+* **Estado em Memória (Hot State)**: Estruturas de dados otimizadas para acesso rápido durante o core loop, contendo posições atuais, ordens abertas e métricas de risco.
+* **Estado Persistido (Warm/Cold State)**:
+  * **Journal de Decisões e Ordens**: Um log de escrita antecipada (write-ahead log) para todas as intenções de trade e ordens enviadas, garantindo durabilidade.
+  * **Banco de Dados Transacional (SQLite)**: Armazena o estado consolidado de posições, ordens, fills, e P&L.
+  * **Snapshots Periódicos**: O estado completo é salvo em snapshots (ex: a cada hora e em shutdown controlado) para acelerar a recuperação.
+
+* **Idempotência e Deduplicação**: Mecanismos como IDs de correlação (`correlation_id`) são usados para rastrear cada decisão de ponta a ponta, evitando o envio de ordens duplicadas após um reinício ou falha de comunicação.
 
 Esse estado deve ser recuperável após um restart e reconciliado com a exchange.
 
@@ -322,12 +286,14 @@ Funcionalmente, o sistema deve:
 * Gerar **logs estruturados** de decisões e eventos críticos;
 * Expor **métricas** de sistema (CPU, memória, latência) e de negócio (P&L, exposição, drawdown);
 * Manter uma **trilha de auditoria** de:
+  * Custos completos por trade (fees + slippage estimado/real);
 
   * Decisões de risco;
   * Alterações de configuração;
   * Rollouts/rollbacks de estratégias.
 
 Deve ser possível gerar **relatórios periódicos** (diários, semanais, mensais) de performance e risco.
+Deve ser possível gerar automaticamente a **Ficha de Estratégia** (metadados, parâmetros, limites de risco, KPIs-alvo, changelog) a partir dos arquivos de configuração declarativa e do código-fonte.
 
 ---
 
@@ -340,10 +306,19 @@ Os requisitos não funcionais definem qualidades esperadas do sistema, além do 
 * O sistema deve operar confortavelmente em **single node**, com capacidade de:
 
   * Executar dezenas de instâncias de estratégias em timeframes de minutos a horas;
-  * Coletar e armazenar dados históricos de múltiplos símbolos em timeframes típicos (1m–1d);
-  * Manter latência de decisão compatível com trading não-HFT (ordens emitidas em segundos após o fechamento do candle, por exemplo).
+  * Coletar e armazenar dados históricos de múltiplos símbolos, seguindo uma **política de retenção clara** (por exemplo, reter 5 anos para timeframes diários e semanais, mas expurgar dados de 1 minuto após 30-60 dias para gerenciar o uso de disco).
+  * Manter latência de decisão compatível com trading não-HFT. Estes são **soft targets** (metas desejáveis), não SLAs (acordos de nível de serviço) críticos, mas servem como referência para o design:
+    * Latência de chamadas REST à exchange: idealmente abaixo de 500ms.
+    * Latência do core loop (do dado à ordem candidata): idealmente abaixo de 2 segundos para a maioria dos ciclos.
 
 * Deve ser possível **ajustar a carga** (número de estratégias, ativos, timeframes) conforme os recursos da máquina, sem necessidade de reestruturação profunda.
+
+* **Hardware de Referência (Exemplo)**: Como linha de base para dezenas de estratégias em timeframes de minutos, o sistema deve ser projetado para operar em hardware como:
+  * **CPU**: 4+ cores
+  * **RAM**: 16GB+
+  * **Armazenamento**: 128GB+ SSD NVMe
+  * **Rede**: Conexão estável de 100Mbps+
+* O requisito de armazenamento (ex: 128GB SSD) deve ser validado contra a política de retenção e o universo de ativos, não sendo um valor fixo, mas uma consequência do escopo operacional desejado.
 
 #### 2.2.2. Confiabilidade e Resiliência
 
@@ -400,12 +375,8 @@ As premissas operacionais são condições assumidas como verdade para o desenho
 
 #### 2.3.1. Ambiente de Execução
 
-* O sistema será executado em **um único nó** (servidor dedicado, VM ou hardware embarcado de alto desempenho, como um Raspberry Pi potente).
-* O sistema operacional alvo é **Linux** (ou derivado), com:
-
-  * Acesso à internet estável;
-  * Permissões de firewall configuráveis;
-  * Recursos mínimos (CPU, RAM, SSD) adequados ao volume de dados/estratégias desejado.
+*   O sistema será executado em **um único nó** (servidor dedicado, VM ou hardware embarcado de alto desempenho).
+*   O sistema operacional alvo é **Linux** (ou derivado), com acesso à internet estável e recursos adequados (CPU, RAM, SSD).
 
 #### 2.3.2. Conectividade com a Exchange
 
@@ -415,10 +386,7 @@ As premissas operacionais são condições assumidas como verdade para o desenho
   * API WebSocket ou equivalente para dados em tempo real;
   * Documentação de filtros de mercado (lotes mínimos, notional, timeframes, etc.).
 
-* Supõe-se também que:
-
-  * A qualidade de dados da exchange é “suficiente” (eventuais outliers e gaps são gerenciáveis via lógica de saneamento);
-  * A exchange seguirá sendo o **Single Source of Truth** para o universo de mercados e suas capacidades.
+A qualidade dos dados da exchange é considerada "suficiente", com outliers e gaps gerenciáveis por lógicas de saneamento.
 
 #### 2.3.3. Perfil de Uso
 
@@ -522,29 +490,8 @@ Logicamente, o sistema é dividido em camadas bem definidas para que:
 O sistema adota uma combinação de:
 
 * **Arquitetura Hexagonal (Ports & Adapters)**
-
-  * Define portas como contratos estáveis (por exemplo: `MarketDataPort`, `TradingPort`, `StoragePort`, `MetricsPort`, `NotificationPort`).
-  * Cada exchange, banco de dados ou serviço externo é implementado como um adapter que “pluga” nessas portas.
-
 * **Clean Architecture / Camadas em Anéis**
-
-  * Núcleo de domínio no centro (entidades, regras de negócio, famílias de estratégias, políticas de risco).
-  * Casos de uso na camada seguinte (orquestração do core loop, execução de backtests, promoção/rebaixamento de estratégias).
-  * Infraestrutura e detalhes técnicos na camada externa (drivers de exchange, drivers de banco, APIs externas).
-
 * **DDD leve focado em trading algorítmico**
-
-  * Entidades principais:
-
-    * **Asset / Symbol**, **Candle**, **Order**, **Fill/Trade**, **Position**, **Portfolio**,
-    * **StrategyFamily**, **StrategyInstance**, **Signal**, **RiskLimit**, **AllocationPolicy**.
-  * Linguagem ubíqua alinhada com o glossário para evitar ambiguidades na documentação e no código.
-
-Esse estilo garante:
-
-* **Testabilidade**: estratégias e regras de risco podem ser testadas sem subir exchange, banco, rede etc.;
-* **Portabilidade**: migrar de Binance para outra exchange exige apenas novos adapters;
-* **Evolutividade**: é possível introduzir novas famílias de estratégias sem refatorar o core.
 
 ---
 
@@ -564,7 +511,6 @@ Abaixo, os principais blocos lógicos da arquitetura:
    * Cada família expõe uma interface padrão:
 
      * `prepare(data_context)`, `generate_signals()`, `post_trade_update()`.
-   * Não conhece detalhes de exchange, storage ou logging. Recebe dados já normalizados e enriquecidos.
 
 3. **Camada de Dados de Mercado (Market Data Layer)**
 
@@ -583,7 +529,6 @@ Abaixo, os principais blocos lógicos da arquitetura:
      * Consulta open orders, posições, histórico de fills;
      * Trata erros de rede, rate limits, estados desconhecidos.
    * Inicialmente terá um **adapter para Binance Spot**, mas a interface é genérica para suportar outras exchanges.
-   * Também existe uma implementação “fake” para **backtest/simulação**, que consome os mesmos sinais.
 
 5. **Módulo de Risco e Alocação de Capital**
 
@@ -627,6 +572,7 @@ Abaixo, os principais blocos lógicos da arquitetura:
    * Suporta workflows de:
 
      * “cadastrar família de estratégia” → “backtest” → “paper trading” → “produção”.
+   * **Deploy Atômico e Feature Flagging**: Deve suportar a ativação/desativação instantânea de estratégias ou famílias em produção via `feature flags` ou mecanismos de `deploy atômico` (ex: Blue-Green), permitindo rollbacks rápidos e seguros sem a necessidade de restart do sistema ou alteração de código.
 
 ---
 
@@ -657,6 +603,7 @@ O **core loop** é o coração do sistema e deve ser o mais simples e previsíve
    * Cada estratégia decide **posição alvo** (por exemplo: 0%, 50% ou 100% do capital designado para aquele símbolo);
    * As estratégias não criam ordens diretamente, apenas descrevem intenções.
 
+   * **Verificação de Dados Suficientes**: Antes da execução da estratégia, o Core Loop deve garantir que o `DataContext` fornecido atende aos `lookbacks mínimos` declarados pela estratégia. Se não, a execução é abortada para aquele ativo/timeframe e um alerta é gerado.
 5. **Aplicação de Risco e Alocação**
 
    * O módulo de risco recebe a posição alvo e confere:
@@ -677,25 +624,12 @@ O **core loop** é o coração do sistema e deve ser o mais simples e previsíve
    * Métricas e logs estruturados são atualizados (tempo de decisão, latência até execução, slippage observado, drawdown corrente);
    * Essa trilha permite reconstruir a “linha do tempo” de qualquer decisão.
 
-Esse core loop é **idempotente onde possível**: reprocessar o mesmo bloco de dados não deve gerar ordens duplicadas, o que simplifica recuperação de falhas e replays para auditoria.
-
 ---
 
-### 3.5. Estratégia de Escalabilidade e Evolução
+### 3.5. Estratégia de Evolução
 
-Embora o alvo atual seja um **ambiente single node** e **single exchange (Binance Spot)**, a arquitetura foi planejada para evoluir sem reescrita massiva:
-
-* **Escalabilidade Vertical (MVP)**
-
-  * Otimização de CPU/RAM/IO no próprio nó (por exemplo, tuning de batch de indicadores, uso eficiente de disco);
-  * Uso de filas assíncronas internas para desacoplar I/O pesado (coleta de dados, escrita em disco) da lógica de decisão.
-
-* **Suporte Multi-Exchange por Design**
-
-  * Ao adicionar uma nova exchange, basta implementar um novo adapter para `MarketDataPort` e `TradingPort`;
-  * O domínio permanece intocado: mesmas famílias de estratégias, mesma lógica de risco e alocação.
-  * Possibilidade futura de estratégias **cross-exchange** (arbitragem, alocação relativa) sem mudar o core.
-
+*   **Escalabilidade Vertical (MVP)**: Otimização de CPU/RAM/IO no nó.
+*   **Suporte Multi-Exchange**: A adição de novas exchanges requer apenas a implementação de novos adapters para as portas `MarketDataPort` e `TradingPort`, sem alterar o domínio.
 * **Evolução de Famílias de Estratégias**
 
   * Novas famílias podem ser incluídas como novos módulos de domínio, registradas no orquestrador e no módulo de governança;
@@ -716,7 +650,6 @@ Em resumo, a Arquitetura Geral garante que:
 * O sistema funciona bem **hoje** em um único nó operando Binance Spot;
 * Mas está pronto para crescer em **largura** (mais famílias e estratégias) e em **extensão** (mais exchanges, mais mercados) sem perda de clareza nem explosão de complexidade.
 
-
 ---
 
 ## 4. Universo de Mercados, Exchanges e Dados
@@ -733,9 +666,7 @@ Na versão inicial, o sistema opera com **uma única exchange**:
 
 * **Binance Spot** como exchange primária.
 
-No entanto, toda a arquitetura de dados e execução assume um cenário **multi-exchange**, ainda que o deployment seja single-node e, no MVP, single-exchange. Isso significa que:
-
-* Existe uma **abstração de Exchange** (porta `ExchangePort` ou `MarketDataPort` + `TradingPort`) que define o “contrato mínimo”:
+* Existe uma **abstração de Exchange** (porta `MarketDataPort` + `TradingPort`) que define o “contrato mínimo”:
 
   * Listar símbolos negociáveis;
   * Listar filtros de trading (lote mínimo, step size, notional mínimo, limites de preço);
@@ -764,22 +695,7 @@ Do ponto de vista do domínio, o sistema não “enxerga” o nome da exchange; 
   * `stream_realtime_ticks(market, ...)`;
   * `send_order(market, side, quantity, price, order_type, ...)`.
 
-Essa camada de abstração é responsável por:
-
-* **Mapear símbolos nativos da exchange** (ex.: `BTCUSDT`, `BTC-USDT`, `XBTUSD`) para um formato interno padronizado;
-* Conhecer **as capacidades daquela exchange** (por exemplo: se suporta stop-limit, OCO, post-only, iceberg, etc.);
-* Expor essas capacidades ao restante do sistema via **feature flags de capacidade**, por exemplo:
-
-  * `features.exchange.binance.spot.oco_orders = true`;
-  * `features.exchange.binance.spot.margin_trading = false` (bloqueado pelo sistema mesmo que a exchange suporte).
-
-Dessa forma, uma mesma família de estratégia pode operar em múltiplas exchanges, desde que os **requisitos mínimos de mercado** estejam disponíveis (por exemplo, necessidade de um mínimo de liquidez, de um conjunto de timeframes, ou suporte a tipos específicos de ordem).
-
----
-
-### 4.3. Classes de Ativos e Símbolos
-
-Inicialmente, o universo é focado em:
+A camada de abstração mapeia símbolos nativos para um formato padronizado e expõe as capacidades da exchange (ex: tipos de ordem) via feature flags, permitindo que uma mesma estratégia opere em múltiplas exchanges.
 
 * **Criptomoedas em mercado spot**, em pares como `BTCUSDT`, `ETHUSDT`, `SOLUSDT` etc.
 
@@ -804,39 +720,13 @@ O sistema só considera para uso real **símbolos em estado válido** (trading a
 * **configuração declarativa** (ex.: quais mercados a família TSM pode usar);
 * combinada com **feature flags derivadas do schema discovery** (ex.: bloquear símbolos com liquidez insuficiente ou com filtros muito restritivos).
 
+* **Filtro de Liquidez Mínima**: O sistema deve aplicar um filtro de liquidez mínimo (ex: `volume médio diário > 1,000,000 USDT`) como regra de negócio. Este filtro é verificado pelo `Schema Discovery` e usado para habilitar/desabilitar mercados via `Feature Flags`, impedindo que estratégias operem em ativos ilíquidos que poderiam causar slippage excessivo.
+
 ---
 
 ### 4.4. Timeframes Suportados
 
-Um ponto fundamental é: **quem define os timeframes suportados não é o sistema, é a exchange**.
-
-O sistema não “inventa” timeframes. Em vez disso:
-
-1. Na inicialização (e periodicamente), o adapter da exchange consulta:
-
-   * Lista de **intervalos de candles** suportados (tipicamente via endpoint de exchange ou documentação oficial);
-2. Mapeia esses intervals para uma enum interna (`TimeframeDescriptor`), por exemplo:
-
-   * `1s`, `1m`, `3m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d`, etc.;
-3. Marca cada timeframe como:
-
-   * `supported = true/false` para aquela exchange específica;
-   * eventuais restrições (mínimo histórico disponível, limite de requisições).
-
-Na configuração, as estratégias apenas escolhem **entre timeframes que foram previamente descobertos e marcados como válidos**. Se uma configuração tentar usar um timeframe não suportado pela exchange, o sistema:
-
-* Rejeita a configuração em tempo de carga (falha de validação Pydantic/Schema);
-* Ou desabilita a estratégia com log de erro claro.
-
-A seleção de timeframes pode ser governada por **feature flags**, por exemplo:
-
-* `features.timeframe.intraday_only = true` → desativa automaticamente estratégias que tentem usar `1d` em um contexto que só aceita intraday;
-* `features.exchange.binance.timeframes.allowed = ["1m","5m","1h","1d"]` → ignora timeframes exóticos mesmo que a exchange suporte, para simplificar e reduzir carga.
-
-Isso garante que:
-
-* O núcleo do sistema seja **agnóstico à lista exata de timeframes**;
-* Alterações futuras na exchange (adição/remoção de intervalos) possam ser absorvidas sem alterar código, apenas via novo ciclo de schema discovery.
+Os timeframes suportados são definidos pela exchange, não pelo sistema. O adapter da exchange consulta os intervalos de candles disponíveis, os mapeia para uma enum interna (`TimeframeDescriptor`) e os marca como suportados. As estratégias escolhem entre os timeframes válidos, e qualquer configuração inválida é rejeitada. A seleção pode ser governada por feature flags para limitar os timeframes utilizáveis.
 
 ---
 
@@ -895,6 +785,22 @@ Como o sistema pode operar em múltiplas exchanges e, possivelmente, em múltipl
   * Verificação de consistência entre `open`, `high`, `low`, `close`, `volume`;
   * Regras de rejeição ou marcação de “bad data” para períodos anômalos.
 
+* **Política de Saneamento**: O sistema implementa uma política de saneamento explícita. Dados marcados como `BAD` (ex: gaps irrecuperáveis) impedem a execução da estratégia para o ativo afetado e geram alertas. Dados `QUESTIONABLE` (ex: outliers) são logados, e a estratégia pode prosseguir usando o último dado válido conhecido, com a incerteza registrada na trilha de auditoria.
+
+#### 4.6.1. Regras de Validação e Tratamento de Gaps
+
+* **Validações de Candle**:
+  * `high >= max(open, close) >= low` (com uma pequena tolerância para dados ruidosos).
+  * `volume >= 0`.
+  * Timestamps devem seguir a sequência esperada para o timeframe, sem duplicações.
+* **Tratamento de Gaps**:
+  * **Gaps Pequenos (< 2 candles)**: O sistema pode tentar preencher o dado faltante com a informação do candle anterior (`forward-fill`) e marcar o dado como `QUESTIONABLE`.
+  * **Gaps Grandes (>= 2 candles)**: O período é marcado como `MISSING` ou os candles como `BAD`, e um alerta é gerado. Estratégias são configuradas para decidir se pausam ou ignoram o ativo durante esse período.
+* **Thresholds de Qualidade**:
+  * **Detecção de Spikes**: Um movimento de preço que excede um múltiplo configurado do ATR (ex: `> 10 * ATR(20)`) marca o candle como `QUESTIONABLE`.
+  * **Volume Anômalo**: Períodos com volume zero ou muito abaixo da média recente podem gerar um `WARNING` e marcar os dados como `QUESTIONABLE`.
+
+
 * **Qualidade e Saneamento**
 
   * Regras de **data quality** podem marcar determinados intervalos como “não confiáveis” (por exemplo, durante falhas reconhecidas de exchange);
@@ -918,16 +824,18 @@ A persistência de dados é projetada para um **ambiente single node**, prioriza
 
 As decisões principais são:
 
-* Uso de **SQLite** para:
+* Uso de **SQLite** para dados transacionais e de estado:
 
   * Metadados de mercados (lista de símbolos, filtros, timeframes suportados);
   * Estado operacional (posições, ordens, trades);
-  * Registros de execução de estratégias (sinais, decisões de risco, P&L agregado).
+  * Registros de execução (sinais, decisões de risco, P&L agregado) e eventos de auditoria.
 
 * Uso de formatos de arquivo do tipo **Parquet/CSV** (ou similar) para:
 
   * Séries históricas de candles por `exchange/symbol/timeframe`;
   * Armazenamento de séries derivadas usadas em pesquisas e backtests (indicadores, scores, labels).
+
+* Em fases mais maduras (Fase 4+ do roadmap), para análises mais pesadas, pode-se introduzir **DuckDB** para consultas analíticas sobre os arquivos Parquet, combinando a simplicidade do SQLite para o estado transacional com a performance do DuckDB para analytics.
 
 A organização típica é:
 
@@ -981,13 +889,41 @@ Um pilar do projeto é tratar a **API da exchange como fonte única da verdade (
      * Limitar timeframes a um subconjunto “oficialmente suportado” pelo projeto;
      * Habilitar apenas algumas famílias de estratégias em uma exchange nova até que ela seja totalmente validada.
 
-Esses dois mecanismos juntos garantem que:
-
-* O **universo de mercados é derivado da realidade da exchange**, não de suposições;
-* Mudanças na exchange (adição ou remoção de timeframes, alterações de filtros) sejam detectadas e refletidas no sistema, com logs e, se necessário, desativação automática de estratégias afetadas;
-* A evolução controlada (progressive delivery) de novas capacidades e novas exchanges seja feita de forma **segura e auditável**, sem alterar a base conceitual do sistema.
-
 ---
+### 4.8.1. Modelo de Dados (Entidades Core)
+
+As entidades de dados são definidas usando modelos tipados (Pydantic) para garantir consistência e validação.
+
+```python
+# Exemplo de definição de entidade com Pydantic
+from enum import Enum
+from datetime import datetime
+from decimal import Decimal
+from pydantic import BaseModel
+
+class DataQuality(str, Enum):
+    GOOD = "GOOD"
+    QUESTIONABLE = "QUESTIONABLE"
+    BAD = "BAD"
+
+class Candle(BaseModel):
+    exchange_id: str
+    symbol: str
+    timeframe: str # Ou um Enum de Timeframe
+    timestamp: datetime
+    open: Decimal
+    high: Decimal
+    low: Decimal
+    close: Decimal
+    volume: Decimal
+    data_quality: DataQuality = DataQuality.GOOD
+
+class Position(BaseModel):
+    strategy_id: str
+    symbol: str
+    quantity: Decimal
+    avg_entry_price: Decimal
+```
 
 Com isso, o “Universo de Mercados, Exchanges e Dados” deixa de ser um conjunto de constantes hardcoded e passa a ser uma **camada viva, descoberta e validada em tempo de execução**, sobre a qual as famílias de estratégias podem operar com segurança, robustez e previsibilidade.
 
@@ -997,33 +933,6 @@ Com isso, o “Universo de Mercados, Exchanges e Dados” deixa de ser um conjun
 
 O framework de estratégias é o “coração lógico” do sistema: é nele que as **famílias de estratégias** (Trend Following, Dual Momentum, Cross-Sectional, Carry, Value/Quality, Mean Reversion, Market Making) são definidas, versionadas, configuradas e orquestradas.
 O objetivo é garantir que todas as estratégias, independentemente da família, sigam um **contrato comum**, possam ser **testadas de forma isomórfica** (mesma lógica em backtest e produção) e sejam facilmente ativadas/desativadas por configuração, sem alterações em código de infraestrutura.
-
----
-
-### 5.1. Princípios
-
-O framework de estratégias é guiado por alguns princípios centrais:
-
-* **Sistematicidade e Documentação**
-  Cada estratégia deve ser completamente especificada em termos de regras formais (sem elementos discricionários), com hipótese explícita, referências de evidência histórica e parâmetros bem definidos.
-  A documentação da família deve incluir: premissa, regime de mercado em que tende a funcionar melhor, riscos típicos, métricas-alvo e limitações conhecidas.
-
-* **Separação entre Família e Instância de Estratégia**
-  A “família de estratégia” representa o **conceito** (por exemplo, “TSM long/flat em janelas de 3 a 12 meses”).
-  Cada “instância de estratégia” é uma configuração concreta dessa família: conjunto de ativos, timeframes, parâmetros específicos, limites de risco e modo de operação (backtest/paper/live).
-  Isso permite que uma mesma família tenha múltiplas instâncias em paralelo, com configurações diferentes, sem duplicação de lógica.
-
-* **Desacoplamento de Infraestrutura**
-  Estratégias não conhecem detalhes de exchange, banco de dados, filas ou logs. Elas recebem um contexto de dados já normalizado e enriquecido, e produzem **sinais de posição alvo**.
-  A execução física (ordens), gestão de risco, logging e persistência são responsabilidade de outros módulos.
-
-* **Reuso entre Backtest e Produção**
-  A lógica de geração de sinais deve ser exatamente a mesma em backtest, paper trading e live trading.
-  A diferença está apenas nos adapters: em backtest, o “executor” é simulado; em produção, é o adapter real (por exemplo, Binance Spot).
-
-* **Configuração Declarativa e Type-Safe**
-  Estratégias são ativadas/desativadas por configuração (YAML/JSON) validada por modelos fortes (Pydantic ou similar).
-  Isso reduz a chance de erro de configuração e facilita versionamento, revisão e auditoria.
 
 ---
 
@@ -1039,6 +948,8 @@ Em termos conceituais, uma estratégia expõe, no mínimo:
     Exemplo: `prepare(strategy_config, market_context, data_schema)`.
 
 * Um método de **execução principal** (core de decisão):
+  * **Declaração de Requisitos de Dados**: Cada estratégia deve declarar explicitamente seus requisitos de dados, incluindo `lookbacks mínimos` para cada indicador ou feature utilizada.
+
 
   * Recebe um contexto de dados (por exemplo, um DataFrame ou estrutura equivalente) com candles recentes, indicadores e metadados de mercado.
   * Devolve um conjunto de **sinais de posição alvo** por mercado (por exemplo, “para BTCUSDT: 100% alocado”, “para ETHUSDT: zeroar”).
@@ -1120,6 +1031,26 @@ O modelo de configuração típico inclui:
   * `strategy_id`: identificador único daquela instância específica (ex.: `TSM_BTCUSDT_1D_v1`).
 
 * **Contexto de Mercado**
+* **Versão e Modo de Operação**
+  * `version`: "1.0.0" (seguindo versionamento semântico).
+  * `mode`: `backtest` | `paper` | `live`.
+
+* **Contexto de Mercado**
+
+  * `markets`:
+    ```yaml
+    - exchange: binance_spot
+      symbol: BTC/USDT
+    ```
+  * `timeframe`: `1d`.
+
+* **Parâmetros da Estratégia**
+  * `parameters`:
+    ```yaml
+    lookback_window: 200
+    threshold: 0.0
+    vol_window: 20
+    ```
 
   * Lista de `markets` (por exemplo, `["BINANCE:BTCUSDT", "BINANCE:ETHUSDT"]`);
   * `timeframe` principal e, se aplicável, timeframes auxiliares;
@@ -1131,13 +1062,11 @@ O modelo de configuração típico inclui:
 
 * **Políticas de Risco Locais**
 
-  * Risco máximo por trade da instância;
-  * Limite de alocação por ativo dentro da instância;
-  * Stop conditions específicas (por exemplo, desligar instância se drawdown > X%).
-
-* **Metadados Operacionais**
-
-  * Modo de execução (`backtest`, `paper`, `live`);
+  * `risk`:
+    ```yaml
+    max_position_pct: 0.30  # 30% do capital da estratégia
+    max_daily_loss_pct: 0.02
+    ```
   * Prioridade relativa da instância no escalonador;
   * Flags de debug, logging extra, exportação de sinais.
 
@@ -1164,28 +1093,6 @@ Estratégias não se preocupam com detalhes como:
 * Diferenças de tipos de ordem disponíveis (por exemplo, se stop-limit existe ou não em uma exchange).
 
 Esses detalhes são encapsulados pelos adapters de exchange, que expõem um comportamento homogêneo ao domínio. Quando uma família precisa de capacidades específicas (por exemplo, Market Making em nível de book de ofertas), ela declara isso explicitamente, e o sistema só a habilita para exchanges que atendam a esses requisitos.
-
----
-
-### 5.6. Critérios de Priorização de Famílias
-
-Nem todas as famílias de estratégias têm o mesmo nível de robustez de evidência, nem os mesmos requisitos de infraestrutura. Por isso, o framework inclui um **modelo explícito de priorização**, que pode ser usado tanto no roadmap quanto na alocação de capital e recursos de engenharia.
-
-Critérios principais:
-
-* **Robustez de Evidência Histórica**
-  Famílias com literatura mais ampla e replicada (por exemplo, Trend Following / Time-Series Momentum) recebem prioridade mais alta.
-
-* **Retorno Ajustado ao Risco (Sharpe/Sortino/Calmar)**
-  Famílias que historicamente exibem melhor perfil de retorno ajustado a risco, e menor vulnerabilidade a crashes extremos, são preferidas para os primeiros ciclos de produção.
-
-* **Viabilidade Prática em Spot**
-  Famílias que funcionam bem em spot long/flat, sem necessidade de derivativos complexos ou HFT (por exemplo, TSM, Dual Momentum, Value/Quality), têm prioridade sobre famílias que exigem latência baixíssima, acesso profundo ao book ou derivativos com alavancagem.
-
-* **Complexidade Operacional**
-  Famílias com menor complexidade de implementação e operação (por exemplo, TSM diário) são incluídas antes de famílias intraday sensíveis a custos e slippage (como Mean Reversion intraday ou Market Making).
-
-Esse modelo orienta tanto o **roadmap** (qual família vem primeiro) quanto decisões de **alocação de capital** e de tempo de engenharia, mantendo alinhamento entre teoria, evidência e realidade operacional.
 
 ---
 
@@ -1237,68 +1144,17 @@ Com esse framework, o sistema consegue tratar cada família de estratégia como 
 
 ## 6. Família 1 – Trend Following / Time-Series Momentum (TSM)
 
-A família **Trend Following / Time-Series Momentum (TSM)** é o pilar principal do framework.
-Ela é tratada como a **primeira família de produção** porque combina:
-
-* evidência empírica e acadêmica robusta em múltiplas classes de ativos;
-* implementação relativamente simples;
-* boa relação **retorno x risco**, com capacidade de reduzir exposição em grandes crises;
-* perfeita aderência ao modo **spot long/flat** (sem necessidade de short ou derivativos).
+A família **Trend Following / Time-Series Momentum (TSM)** é o pilar principal e a primeira a ser implementada no framework.
 
 ---
 
 ### 6.1. Descrição Conceitual
 
-Time-Series Momentum (TSM) parte de uma ideia simples:
-
-> Se o retorno recente de um ativo foi positivo, há maior probabilidade de que a tendência de alta continue por algum tempo.
-> Se o retorno recente foi negativo, há maior probabilidade de que a tendência de baixa continue.
-
-Em termos práticos, para cada ativo:
-
-* calcula-se o **retorno acumulado** em uma janela de lookback (ex.: 3, 6 ou 12 meses, ou X dias);
-* se esse retorno é **positivo** acima de um certo limiar, a estratégia assume que a tendência é de alta e busca ficar **comprada**;
-* se o retorno é **negativo** (ou não suficientemente positivo), a estratégia **não mantém posição** (fica em cash / stable).
-
-No contexto do projeto:
-
-* TSM é sempre implementado em versão **long/flat**, nunca short “seco”;
-* a lógica pode ser aplicada a um único ativo (por exemplo, BTCUSDT) ou a um **conjunto de ativos**, avaliando a tendência individual de cada um.
-
-Essa abordagem tende a:
-
-* participar das grandes pernadas de tendência (bull markets);
-* reduzir ou eliminar exposição em crises severas (quando os retornos acumulados tornam-se fortemente negativos).
+A estratégia de Time-Series Momentum (TSM) opera com base no retorno acumulado de um ativo em uma janela de lookback (ex: 3-12 meses). Se o retorno for positivo acima de um limiar, a estratégia busca uma posição comprada. Caso contrário, a posição é zerada (long/flat). A lógica pode ser aplicada a um ou múltiplos ativos.
 
 ---
 
-### 6.2. Evidência Histórica e Referências
-
-Embora este documento não liste exaustivamente os estudos, a família TSM/Trend Following se apoia em um corpo significativo de evidência:
-
-* Estudos clássicos mostram que **time-series momentum** é observável em:
-
-  * índices de ações,
-  * moedas (FX),
-  * commodities,
-  * títulos de renda fixa (bonds),
-    ao longo de décadas e em vários mercados.
-
-* Em cripto, diversos trabalhos e backtests independentes sugerem que:
-
-  * aplicar TSM em **BTC** e em **cestas de criptos** mantém poder explicativo;
-  * o principal desafio está em custos, slippage e mudanças de regime, não na inexistência do efeito.
-
-No projeto, TSM é tratado como:
-
-* a família com **maior prioridade** na fase inicial;
-* referência para avaliar a qualidade de outras famílias (Dual Momentum, Cross-Sectional, Mean Reversion etc.), tanto em performance quanto em robustez.
-
----
-
-### 6.3. Adaptação para Spot Long/Flat
-
-Para aderir ao escopo do projeto (spot long/flat, sem short), a adaptação de TSM segue alguns princípios:
+### 6.3. Implementação
 
 1. **Sinal de Tendência Baseado em Retorno Acumulado**
 
@@ -1314,21 +1170,9 @@ Regra básica:
 * se `retorno_L > threshold` → sinal de **tendência de alta** → posição alvo positiva (ex.: 100% do capital designado para aquele ativo);
 * se `retorno_L ≤ threshold` → **sem posição** naquele ativo (cash/stable).
 
-2. **Posição Long/Flat (sem short)**
+2. **Posição Long/Flat e Interação com Risco**
 
-* Em vez de inverter a posição (long → short) quando o sinal é negativo, a estratégia simplesmente **zera** a exposição;
-* Essa abordagem é compatível com:
-
-  * restrições de infraestrutura (spot, sem margem/alavancagem);
-  * filosofia de reduzir risco em crises, ficando fora do mercado ou em stablecoins.
-
-3. **Interação com o Módulo de Risco**
-
-* A estratégia não decide “quantas unidades” comprar, mas **qual percentual de alocação alvo** por ativo (por exemplo, 0%, 50% ou 100% da parcela de capital designada à família TSM);
-* O módulo de risco:
-
-  * converte esses alvos em tamanhos de posição compatíveis com limites de risco (por trade, por ativo, por família, por exchange);
-  * garante que limites globais de exposição não sejam ultrapassados (seção 13).
+A estratégia opera em modo long/flat, zerando a posição quando o sinal de tendência é negativo. Ela gera um percentual de alocação alvo, que é convertido em tamanho de posição pelo módulo de risco, respeitando todos os limites hierárquicos.
 
 ---
 
@@ -1603,20 +1447,7 @@ Ao final desse roadmap, TSM deve se consolidar como:
 
 ## 7. Família 2 – Dual Momentum (TSM + Cross-Sectional)
 
-A família **Dual Momentum** combina duas ideias que, isoladamente, já têm bom histórico de evidência empírica:
-
-* **Time-Series Momentum (TSM)** – tendência do próprio ativo ao longo do tempo;
-* **Cross-Sectional Momentum (CSM)** – desempenho relativo entre ativos de um mesmo universo.
-
-Na prática, a abordagem Dual Momentum:
-
-1. **filtra** o universo de ativos por TSM (só entra quem está “em tendência favorável” individualmente);
-2. **ranqueia** apenas esse subconjunto pelos retornos relativos (CSM);
-3. seleciona os **melhores colocados** para alocação.
-
-É, portanto, uma família naturalmente adequada para **portfólios multi-ativos em spot** e com foco forte em **retorno ajustado ao risco**.
-
----
+A família **Dual Momentum** combina Time-Series Momentum (TSM) e Cross-Sectional Momentum (CSM). Ela filtra ativos com tendência positiva (TSM) e, em seguida, ranqueia esse subconjunto para selecionar os de melhor desempenho relativo (CSM), sendo adequada para portfólios multi-ativos em spot.
 
 ### 7.1. Descrição Conceitual
 
@@ -1650,48 +1481,9 @@ O resultado é um portfólio que tende a:
 
 ---
 
-### 7.2. Evidência Histórica e Referências
+### 7.3. Implementação
 
-Dual Momentum se apoia em dois blocos de evidência:
-
-1. **Time-Series Momentum (TSM)**
-
-   * Forte evidência em diversas classes de ativos (ações, FX, commodities, bonds), ao longo de décadas;
-   * Tende a capturar tendências de médio prazo e proteger em grandes crises (por ficar fora quando o ativo entra em tendência negativa).
-
-2. **Cross-Sectional Momentum**
-
-   * Estudos mostram que, dentro de um universo de ativos (por exemplo, ações de um índice), os **vencedores recentes tendem a continuar vencendo** por algum tempo, e perdedores permanecem fracos;
-   * Em versão long/short, costuma ter retornos altos, porém com risco de “momentum crashes”.
-
-Ao combinar ambos:
-
-* Dual Momentum **filtra** por TSM para diminuir a probabilidade de entrar em ativos em “regime ruim”;
-* Dentro dos filtrados, **ranqueia** por CSM para aproveitar a “seleção dos melhores cavalos da corrida”.
-
-Na prática, essa combinação costuma:
-
-* reduzir drawdowns em relação ao momentum puramente cross-sectional;
-* melhorar Sharpe/Sortino, ao cortar parte dos períodos em que “todo o universo está ruim”.
-
----
-
-### 7.3. Adaptação para Spot Long-Only
-
-No escopo do projeto (spot, long/flat), Dual Momentum é implementado como **long-only com cash como contraparte**, sem short nem alavancagem. Os princípios de adaptação são:
-
-1. **Nada de short estruturado**
-
-   * Mesmo que haja ativos “perdedores”, a estratégia **não opera vendida** neles;
-   * Em vez disso, simplesmente não aloca (ou reduz) capital nesses ativos.
-
-2. **Cash/Stable como “ativo neutro”**
-
-   * Quando:
-
-     * poucos ativos passam no filtro TSM;
-     * ou o universo inteiro está ruim;
-   * parte relevante do portfólio pode permanecer em **cash/USDT/stablecoin**, reduzindo risco direcional.
+A implementação é **long-only com cash como contraparte**. Ativos "perdedores" não são vendidos a descoberto, mas simplesmente não recebem alocação. Quando poucos ativos passam no filtro TSM, o portfólio pode permanecer majoritariamente em cash/stablecoin.
 
 3. **Alocação Proporcional apenas nos “elegíveis”**
 
@@ -1871,53 +1663,6 @@ Todos esses parâmetros são definidos por **instância de estratégia**, valida
 
 ---
 
-### 7.7. Risco Específico
-
-Embora Dual Momentum tenha, em geral, um perfil de risco mais controlado do que momentum puramente cross-sectional, há riscos específicos que precisam ser explicitamente tratados:
-
-1. **Risco de Concentração em Poucos Ativos**
-
-* Em certos períodos, o filtro TSM + ranking CS pode:
-
-  * Concentrar a alocação em apenas 1–3 ativos;
-  * Isso aumenta o risco idiossincrático (eventos específicos de um projeto/token/ativo).
-* Mitigações:
-
-  * Limites por ativo (`max_exposure_per_asset`);
-  * Mínimo de ativos selecionados (se não houver ativos suficientes, parte do portfólio permanece em cash).
-
-2. **Risco de Rotação Brusca**
-
-* Quando o ranking muda fortemente entre rebalances, pode haver:
-
-  * Rotação frequente de ativos;
-  * Aumento de custos e slippage.
-* Mitigações:
-
-  * `rebalance_band`: zona de tolerância para evitar trocas por diferenças pequenas de score;
-  * Limitação da fração do portfólio que pode girar a cada rebalance (turnover cap).
-
-3. **Risco de Regime em que “Tudo Vai Mal”**
-
-* Em crises sistêmicas, o universo inteiro pode estar com TSM ruim:
-
-  * Dual Momentum, nesse caso, tende a mandar o portfólio para cash;
-  * Isso é desejável do ponto de vista de preservação, mas pode gerar períodos longos de inatividade.
-* Esse comportamento está alinhado com o objetivo de **preservar capital em regimes extremos**.
-
-4. **Risco de Momentum Crash**
-
-* Em certas condições (forte reversão em ativos líderes), pode haver:
-
-  * “Momentum crash” – quedas rápidas em ativos que estavam liderando o ranking;
-* Embora o filtro TSM ajude, não elimina totalmente esse risco.
-* Mitigações adicionais:
-
-  * Limites de DD e circuit breakers locais por família;
-  * Componentes complementares de portfólio (por exemplo, TSM mais defensivo, Value/Quality), para reduzir correlação.
-
----
-
 ### 7.8. Estratégias de Diversificação Interna
 
 Por ser naturalmente um **portfólio de múltiplos ativos**, Dual Momentum já traz diversificação embutida. Ainda assim, algumas estratégias internas podem melhorar a qualidade dessa diversificação:
@@ -1968,65 +1713,17 @@ Com isso, a **Família 2 – Dual Momentum** se posiciona no framework como:
 
 ## 8. Família 3 – Cross-Sectional Momentum (Relativo entre Ativos)
 
-A família **Cross-Sectional Momentum (CSM)** explora o comportamento relativo entre ativos de um mesmo universo:
-em vez de perguntar “este ativo está em tendência?” (como em TSM), ela pergunta:
-
-> “Quais ativos **se saíram melhor** e quais se saíram pior que os demais na janela recente – e se essa diferença tende a persistir?”
-
-Na forma clássica, CSM costuma ser implementado como **long vencedores / short perdedores**, o que historicamente gera retornos médios elevados, mas também está sujeito a **drawdowns violentos** (os chamados *momentum crashes*).
-No contexto deste projeto, a família é adaptada para o ambiente **spot long-only / long-flat**, o que reduz parte do risco, mas também parte da “edge” bruta.
+A família **Cross-Sectional Momentum (CSM)** explora o comportamento relativo entre ativos de um mesmo universo, ranqueando-os pelo retorno passado e comprando os "vencedores". No contexto do projeto, a família é adaptada para o ambiente **spot long-only / long-flat**.
 
 ---
 
 ### 8.1. Descrição Conceitual
 
-O Cross-Sectional Momentum funciona essencialmente como um **ranking entre ativos**:
-
-1. Define-se um **universo** de ativos (por ex., top 20–50 criptos por liquidez);
-2. Calcula-se, para cada ativo, o **retorno passado** em uma ou mais janelas (por ex., 3 a 12 meses ou N candles);
-3. Ordenam-se os ativos do melhor para o pior retorno;
-4. Compram-se os **“vencedores”** (top 10–20%), ignorando ou, na forma clássica, vendendo os **“perdedores”** (bottom 10–20%).
-
-Na nossa adaptação:
-
-* A estratégia permanece **long-only**, ou seja:
-
-  * Long nos vencedores;
-  * Nada (cash/stable) nos demais;
-* Não há venda a descoberto; qualquer “lado short” é representado por **não alocar capital**.
-
-Enquanto TSM olha se o próprio ativo está “andando para cima” ou “para baixo” ao longo do tempo, CSM olha **quem está se saindo melhor dentro do grupo**, independentemente da direção absoluta do mercado (embora, na prática, isso também importe).
+A estratégia funciona como um ranking: para um universo de ativos, calcula-se o retorno passado (ex: 3-12 meses), ordenam-se os ativos, e compram-se os "vencedores" (top 10-20%). Na adaptação long-only, os perdedores são ignorados (posição em cash/stable), sem venda a descoberto.
 
 ---
 
-### 8.2. Evidência Histórica e Características
-
-A literatura empírica mostra que estratégias de momentum relativo:
-
-* Geram **retornos médios elevados** em vários mercados (ações, FX, às vezes commodities), quando construídas como *long vencedores / short perdedores*;
-* Apresentam, porém, episódios de **crashes de momentum**:
-
-  * Fases em que os “vencedores recentes” sofrem reversões brutais;
-  * Em ações, isso é particularmente visível após períodos de forte stress ou mudanças bruscas de regime.
-
-Em versão **long-only**, usada neste projeto:
-
-* Parte da força do fator momentum é perdida (já que não se captura o lado short dos perdedores);
-* Em compensação:
-
-  * O risco extremo de certas configurações de momentum long/short é mitigado;
-  * O perfil fica mais próximo de um **filtro de seleção relativa** dentro de um universo de ativos, adequado para portfólios spot.
-
-Por essas características, dentro do framework:
-
-* CSM é considerado **mais agressivo e frágil** que TSM e Dual Momentum;
-* É priorizado depois dessas famílias, com alocação de capital comedida e forte disciplina de risco.
-
----
-
-### 8.3. Adaptação para Spot Long-Only
-
-A adaptação de CSM ao modo **spot long/flat** segue as diretrizes gerais do projeto:
+### 8.3. Implementação
 
 1. **Apenas lado long**
 
@@ -2198,57 +1895,6 @@ Todos esses parâmetros são especificados por **instância de estratégia**, va
 
 ---
 
-### 8.7. Riscos Específicos (Momentum Crash e Outros)
-
-CSM, mesmo em versão long-only, carrega riscos específicos que devem ser reconhecidos e tratados:
-
-1. **Momentum Crash**
-
-* Episódios em que:
-
-  * Ativos líderes (vencedores) sofrem correções repentinas e severas;
-  * O portfólio CSM, concentrado nesses líderes, é duramente impactado.
-* Em mercados de cripto, isso pode ocorrer após:
-
-  * Fases de euforia em um grupo de tokens (L1, DeFi, memecoins etc.);
-  * Mudanças de narrativa ou crashes sistêmicos.
-
-Mitigações:
-
-* Limites de perda (DD) por família e por instância;
-* Circuit breakers específicos (pausar CSM quando drawdown acima de X%);
-* Combinação com famílias mais defensivas (TSM, Value/Quality, etc.) no portfólio global.
-
-2. **Crowding e Rotação Exagerada**
-
-* Quando muitos ativos têm retorno muito parecido:
-
-  * O ranking torna-se instável;
-  * Pequenas variações de preço produzem reordenações grandes;
-  * Isso aumenta **turnover** e custos.
-
-Mitigações:
-
-* “Bandas de inércia” no ranking:
-
-  * Só troca um ativo por outro se a diferença de score ultrapassa um delta mínimo;
-* Limite de fração da carteira que pode ser girada em um rebalance.
-
-3. **Risco de Universos Pequenos**
-
-* Em universos pequenos (por ex., poucos ativos elegíveis), o CSM pode:
-
-  * Tornar-se praticamente um “TSM disfarçado” ou
-  * Ficar hiperconcentrado em 1–2 ativos.
-
-Mitigações:
-
-* Teto por ativo (`max_exposure_per_asset`);
-* Exigir tamanho mínimo de universo para ativar a estratégia (se muito pequeno, manter parte maior em cash);
-* Combinar CSM com outras famílias para evitar dependência excessiva.
-
----
-
 ### 8.8. Papel no Portfólio e Diversificação Interna
 
 Dentro do portfólio geral do sistema:
@@ -2351,106 +1997,17 @@ o que justifica sua posição **abaixo de TSM e Dual Momentum na ordem de priori
 
 ## 9. Família 4 – Carry / Yield / Basis
 
-A família **Carry / Yield / Basis** explora retornos que não dependem primariamente de “acertar a direção” do preço, mas de:
-
-* **diferenças estruturais de juros / rendimentos** (carry),
-* **pagamentos recorrentes** (yield),
-* **deslocamentos entre mercados relacionados** (basis, funding).
-
-Em termos simples, são estratégias que tentam responder:
-
-> “Onde eu sou remunerado por simplesmente *segurar* um ativo ou uma posição estrutural, assumindo determinados riscos de cauda, liquidez e contraparte?”
-
-No framework, essa família é tratada como **complementar** às famílias puramente direcionais (TSM, Dual Momentum, CSM), com papel relevante, mas **prioridade operacional menor** no início, sobretudo porque:
-
-* Muitas das oportunidades de basis/funding envolvem **derivativos** (futuros, perpétuos);
-* Há riscos específicos de **crise / crash** em carry (ganha devagar, pode perder rápido);
-* Para manter o foco em **spot long/flat** no MVP, parte dessa família entra primeiro via **yield “puro” em spot** (staking, juros em stablecoins, etc.), e só depois via basis estruturado.
+A família **Carry / Yield / Basis** explora retornos de diferenças de juros (carry), pagamentos recorrentes (yield) ou deslocamentos entre mercados (basis). É uma família complementar às estratégias direcionais.
 
 ---
 
 ### 9.1. Descrição Conceitual
 
-Em macro, a família engloba três pilares:
-
-1. **Carry (Juro / Rendimento Relativo)**
-
-   * Em FX: comprar moedas de **juros altos** e vender de **juros baixos** (carry trade).
-   * Em renda fixa: carregar títulos com cupom acima do custo de financiamento.
-   * Em cripto: carregar posições onde há um “juro implícito” (staking, rewards, juros de lending, etc.).
-
-2. **Yield (Rendimentos Recorrentes em Spot)**
-
-   * Rendimento explícito por **segurar** determinado ativo:
-
-     * staking on-chain;
-     * juros em plataformas de lending centralizadas/descentralizadas;
-     * dividendos (no caso de ações, em expansões futuras);
-   * Tipicamente, um retorno relativamente estável *enquanto o regime se mantém*, mas com risco de:
-
-     * desvalorização do principal;
-     * falhas de protocolo/plataforma.
-
-3. **Basis / Funding (Cripto e Derivativos)**
-
-   * Diferença entre:
-
-     * preço do ativo no mercado à vista (spot);
-     * e preço no mercado de futuros/perpétuos (basis/funding).
-   * Estratégias clássicas:
-
-     * **Long spot + short perp/futuro** quando há funding positivo ou basis elevada, capturando o spread ao longo do tempo;
-     * Em ambientes específicos, também o inverso, mas menos comum e mais arriscado.
-
-No projeto, toda exploração de basis/funding é considerada **módulo avançado e opcional**, pois:
-
-* exige integração com **mercados de derivativos**;
-* aumenta o risco operacional (alavancagem, liquidação, risco de exchange).
+A família engloba três pilares: **Carry** (diferencial de juros), **Yield** (rendimentos recorrentes como staking) e **Basis/Funding** (diferença entre preço spot e de derivativos). A exploração de basis/funding é considerada um módulo avançado e opcional.
 
 ---
 
-### 9.2. Evidência Histórica e Características
-
-Famílias de carry e basis são amplamente documentadas:
-
-* Em FX, o **carry trade** (long high-yield, short low-yield) é um fenômeno clássico:
-
-  * tende a gerar retornos positivos em períodos de estabilidade;
-  * sofre perdas abruptas em episódios de *flight to quality*/crises financeiras.
-
-* Em cripto:
-
-  * O Funding/Basis positivo prolongado em bull markets permitiu, historicamente, estratégias de:
-
-    * comprar spot e vender perp/futuro, capturando funding periódico ou basis ao longo do tempo;
-  * Essas estratégias exibem perfil típico de:
-
-    * “ganha devagar, perde rápido” se ocorrer desalinhamento estrutural, squeezes, falhas de exchange ou de gestão de margem.
-
-* Yield em staking/lending:
-
-  * Quando bem selecionado, pode gerar renda relativamente estável;
-  * Mas carrega riscos não triviais:
-
-    * smart contract;
-    * risco de plataforma / custódia;
-    * depeg de stablecoins;
-    * risco regulatório.
-
-Dentro do framework, essa família é vista como:
-
-* Potencialmente **muito lucrativa**, especialmente em certos regimes (bull markets prolongados, funding consistentemente positivo etc.);
-* Mas com **riscos de cauda** e de infraestrutura que exigem:
-
-  * módulos de risco específicos;
-  * governança mais rígida;
-  * e, por isso, **entrada tardia** no roadmap em relação às famílias de momentum.
-
----
-
-### 9.3. Adaptação ao Contexto Spot Long/Flat
-
-Dado que o projeto é orientado a **spot long/flat** em um primeiro momento, a adaptação dessa família segue alguns eixos:
+### 9.3. Implementação
 
 1. **Foco inicial em Yield “spot-based”**
 
@@ -2665,65 +2222,6 @@ Todos os parâmetros devem ser definidos em configuração, validados e versiona
 
 ---
 
-### 9.7. Riscos Específicos e Guardrails
-
-A família Carry / Yield / Basis possui um conjunto de riscos **qualitativamente diferentes** das outras:
-
-1. **Risco de Cauda / Crashes de Carry**
-
-* “Ganha devagar, perde rápido”:
-
-  * carry funciona bem em períodos estáveis;
-  * pode sofrer perdas grandes em crises de liquidez, depeg de stable, falhas de exchange/protocolo ou squeezes de basis.
-* Guardrails:
-
-  * orçamento de risco separado para essa família;
-  * limites rígidos de DD local;
-  * desativação automática (circuit breakers) em cenários de stress.
-
-2. **Risco de Contraparte e Plataforma**
-
-* Em yield centralizado (CEX, plataformas de lending), há risco direto:
-
-  * da empresa (falência, fraude);
-  * regulatório (bloqueio de saques, congelamento de contas).
-* Em DeFi, há risco:
-
-  * de smart contract;
-  * de governança (mudança de regras, hacks, exploits).
-
-Guardrails:
-
-* Lista de plataformas e protocolos **explicitamente permitidos** (whitelist);
-* Limite de exposição por plataforma e por tipo de produto;
-* Acompanhamento de notícias/eventos críticos (mesmo que parcialmente manual, integrado ao fluxo de governança).
-
-3. **Risco de Depeg (Stablecoins)**
-
-* Stablecoins podem perder paridade com a moeda de referência (USD, por exemplo);
-* Isso é especialmente grave em estratégias de yield em stable.
-
-Mitigações:
-
-* Diversificação entre diferentes stablecoins;
-* Limites de exposição por stable;
-* Monitoramento de preços vs paridade (alertas se depeg > X%).
-
-4. **Risco de Liquidação (para Basis com Derivativos)**
-
-* Em estratégias com short perp/futuro:
-
-  * variações adversas de preço podem aproximar a posição de limites de liquidação;
-* Mesmo com hedge teórico (long spot), a mecânica de margem gera risco real.
-
-Guardrails:
-
-* Definir explicitamente que o sistema **não opera próximo de margem mínima**;
-* Regras automáticas de redução de posição se a margem disponível ficar abaixo de determinado buffer;
-* Circuit breaker específico para esse módulo.
-
----
-
 ### 9.8. Papel no Portfólio e Roadmap de Implementação
 
 No portfólio global, a família Carry / Yield / Basis é vista como:
@@ -2786,86 +2284,17 @@ que exige **governança e gestão de risco particularmente rigorosas**, motivo p
 
 ## 10. Família 5 – Value + Quality (Principalmente Ações Spot)
 
-A família **Value + Quality** é pensada, neste framework, como um **pilar de médio/longo prazo**, orientado a:
-
-* capturar prêmios de **valor** (ativos “baratos” em relação a lucros, patrimônio, fluxo de caixa);
-* filtrá-los por critérios de **qualidade** (rentabilidade, alavancagem, estabilidade, governança);
-* operar, majoritariamente, em **ações spot long-only**, com baixa rotatividade e horizonte de investimento mais longo.
-
-Ela se encaixa menos naturalmente no universo cripto puro – onde conceitos de “valor intrínseco” e “qualidade contábil” são muito mais nebulosos – e ganha relevância à medida que o sistema evolui para:
-
-* integrar **ações spot** (ETFs, ações individuais, eventualmente BDRs ou equivalentes tokenizados);
-* trabalhar com dados fundamentais (fundamentals) e fatores clássicos.
-
-Por isso, no roadmap, esta família tem **prioridade abaixo** das famílias de momentum (TSM, Dual, CSM) e da família Carry/Yield em cripto, mas é importante para uma visão de portfólio mais ampla e interclasses.
+A família **Value + Quality** é um pilar de médio/longo prazo, focado em capturar prêmios de valor (ativos "baratos") e qualidade (empresas rentáveis e estáveis), operando principalmente em ações spot long-only.
 
 ---
 
 ### 10.1. Descrição Conceitual
 
-A combinação **Value + Quality** é inspirada diretamente na literatura de **fatores** em ações:
-
-* **Value**: comprar ativos com preço “barato” em relação a métricas fundamentais, tais como:
-
-  * P/L (price/earnings),
-  * P/B (price/book),
-  * EV/EBITDA,
-  * dividend yield,
-  * entre outros.
-
-* **Quality**: entre os ativos “baratos”, priorizar os que apresentam:
-
-  * alta rentabilidade (ROE, ROA, margens saudáveis);
-  * baixa alavancagem (dívida controlada);
-  * estabilidade de lucros e fluxos de caixa;
-  * menor probabilidade de problemas contábeis ou de governança.
-
-Em termos práticos:
-
-> A estratégia busca “bons negócios a bons preços”,
-> evitando a clássica armadilha de comprar apenas “coisas baratas” que são baratas por motivos estruturais (value traps).
-
-No contexto do projeto:
-
-* a família é **long-only**, naturalmente compatível com spot;
-* opera em **frequência baixa** (rebalance trimestral, semestral ou anual, tipicamente);
-* serve como **âncora estável** de longo prazo em um portfólio que também terá componentes de alta rotatividade (momentum, mean reversion, etc.).
+A estratégia combina fatores de **Value** (preço baixo em relação a métricas como P/L, P/B) e **Quality** (alta rentabilidade, baixa alavancagem). A família opera em modo long-only, com baixa frequência de rebalanceamento (trimestral a anual), servindo como uma âncora de longo prazo no portfólio.
 
 ---
 
-### 10.2. Evidência Histórica e Características
-
-A literatura de finanças quantitativas mostra que:
-
-* Estratégias de **Value** tendem a apresentar:
-
-  * retornos médios acima do mercado em horizontes de anos;
-  * maior volatilidade em determinados períodos (especialmente em bull markets de “growth”).
-
-* Estratégias de **Quality**:
-
-  * focam em empresas lucrativas, com balanços sólidos;
-  * frequentemente exibem retornos ajustados ao risco superiores e drawdowns um pouco menores.
-
-A combinação **Value + Quality**:
-
-* tenta capturar o prêmio de valor,
-* mas filtrando “lixos baratos” (empresas de baixa qualidade),
-* resultando em carteiras que:
-
-  * muitas vezes têm **volatilidade menor** que o mercado;
-  * podem enfrentar **longos períodos de underperformance** relativa (anos em que growth domina o estilo value).
-
-Essas características tornam a família:
-
-* menos adequada como **primeiro foco** para trading cripto (por falta de fundamentos consolidados),
-* porém extremamente útil quando o framework passar a operar ações spot e ETFs com dados fundamentais disponíveis.
-
----
-
-### 10.3. Adaptação ao Contexto Spot Long-Only
-
-A família Value + Quality encaixa-se naturalmente no modo **spot long-only**:
+### 10.3. Implementação
 
 1. **Apenas lado comprado (long)**
 
@@ -3071,56 +2500,6 @@ Todos esses parâmetros são documentados e versionados, para viabilizar backtes
 
 ---
 
-### 10.7. Riscos Específicos
-
-A família Value + Quality possui riscos bem conhecidos:
-
-1. **Períodos Longos de Underperformance**
-
-   * Estratégias de value (e mesmo value + quality) podem:
-
-     * ficar anos “atrás do mercado” em fases dominadas por growth ou por outras dinâmicas de fluxo;
-   * Isso pode gerar:
-
-     * pressão psicológica;
-     * tentação de abandonar a tese perto do “ponto de virada”.
-
-   No framework:
-
-   * Esse risco é aceito como parte da natureza da família;
-   * Mitigado pela diversificação com outras famílias (momentum, carry etc.);
-   * E monitorado por métricas de performance de médio/longo prazo.
-
-2. **Value Traps (Armadi­lhas de Valor)**
-
-   * Empresas baratas que:
-
-     * são baratas por problemas estruturais e nunca “reprecificam” para cima;
-   * A combinação com quality ajuda a evitar parte dessas armadilhas, mas não todas.
-
-3. **Risco de Mudanças Estruturais**
-
-   * Mudanças na economia, tecnologia ou regulação podem:
-
-     * reduzir a relevância de algumas métricas (ex.: determinados setores em declínio estrutural);
-   * O framework precisa permitir:
-
-     * revisão periódica das métricas e da própria tese da família.
-
-4. **Risco de Dados Fundamentais**
-
-   * Dependência de:
-
-     * qualidade das demonstrações financeiras;
-     * atualidade das bases de dados (atrasos, revisões);
-     * eventuais fraudes ou distorções contábeis.
-   * Mitigações:
-
-     * uso de fornecedores de dados confiáveis;
-     * filtros adicionais de consistência (ex.: excluir empresas com histórico recente de problemas contábeis evidentes).
-
----
-
 ### 10.8. Papel no Portfólio e Roadmap de Implementação
 
 No portfólio global, a família Value + Quality é:
@@ -3195,76 +2574,17 @@ Assim, a **Família 5 – Value + Quality** representa, dentro do framework:
 
 ## 11. Família 6 – Mean Reversion de Curto Prazo (Intraday / Swing)
 
-A família **Mean Reversion de Curto Prazo (Intraday / Swing)** busca capturar movimentos de **excesso de curto prazo** – quedas ou altas rápidas e “exageradas” – assumindo que:
-
-> “Movimentos extremos no curto prazo tendem a ser parcialmente corrigidos, retornando a uma faixa mais ‘normal’ de preço.”
-
-Em contraste com as famílias de **momentum** (que tentam seguir tendências), a mean reversion de curto prazo aposta em **reversões parciais** dentro de janelas pequenas: minutos, horas ou poucos dias.
-
-No contexto do projeto, essa família é tratada como:
-
-* **potencialmente muito lucrativa**,
-* mas **mais frágil** a:
-
-  * custos de transação e slippage;
-  * mudanças de microestrutura;
-  * regimes de mercado em forte tendência;
-* portanto, com **prioridade abaixo** das famílias de momentum (TSM, Dual, CSM) e com alocação de capital mais comedida.
+A família **Mean Reversion de Curto Prazo (Intraday / Swing)** busca capturar reversões de movimentos excessivos de curto prazo. Em contraste com o momentum, ela aposta em correções parciais.
 
 ---
 
 ### 11.1. Descrição Conceitual
 
-A lógica de **mean reversion de curto prazo** parte da observação de que:
-
-* Em muitos mercados, especialmente em horizontes intraday/curtos,
-  **movimentos extremos** (spikes de alta ou quedas abruptas) costumam ser:
-
-  * exagerados pela liquidez momentânea, ordens grandes, stops, liquidations etc.;
-  * seguidos por um movimento oposto de correção parcial.
-
-Em termos práticos, a estratégia procura:
-
-* **comprar “oversold de curto prazo”** (quedas fortes e rápidas, indicadores de exaustão de venda);
-* **vender ou reduzir exposição em “overbought de curto prazo”** (altas fortes, exaustão de compra);
-
-sempre dentro da lógica **spot long/flat**:
-
-* lado long em reversão de baixa;
-* redução/saída em reversões de alta;
-* sem operar short “seco” no núcleo do framework.
-
-Esse tipo de abordagem pode ser aplicado em:
-
-* **intraday** (timeframes de 1m, 5m, 15m, 1h);
-* **swing curto** (1–5 dias), com critérios de reversão em janelas curtas.
+A estratégia busca comprar em condições de "oversold" de curto prazo e reduzir exposição em "overbought", operando em modo spot long/flat. Pode ser aplicada em timeframes intraday (minutos, horas) ou swing (dias).
 
 ---
 
-### 11.2. Características e Fragilidades
-
-Estratégias de mean reversion de curto prazo têm algumas características importantes:
-
-* Podem apresentar **alta taxa de acerto** (muitos trades pequenos vencedores);
-* Porém, quando erram ou o regime muda:
-
-  * podem sofrer **perdas grandes** em movimentos fortes e persistentes de tendência;
-  * são muito sensíveis a custos (fees + slippage), especialmente em regimes intraday.
-
-No projeto, isso se traduz em:
-
-* Tratamento da família como **mais “tática” e menos “estrutural”**;
-* Necessidade de:
-
-  * modelagem de custos muito realista em backtest;
-  * monitoramento estreito de performance live vs simulada;
-  * limites de risco locais restritivos.
-
----
-
-### 11.3. Adaptação ao Contexto Spot Long/Flat
-
-Para aderir ao escopo “spot long/flat” (sem short descoberto), a família é adaptada da seguinte forma:
+### 11.3. Implementação
 
 1. **Long em Oversold / Redução em Overbought**
 
@@ -3446,61 +2766,6 @@ Todos esses parâmetros são:
 
 ---
 
-### 11.7. Riscos Específicos e Guardrails
-
-A família Mean Reversion de Curto Prazo tem riscos distintos, que exigem guardrails fortes:
-
-1. **Risco de Regime (Tendência Forte)**
-
-* Em tendências fortes (bull ou bear), a lógica “vai voltar para média” falha repetidamente;
-* Isso pode gerar **séries de pequenas perdas** (várias tentativas de reversão que não se confirmam).
-
-Guardrails:
-
-* Filtros de tendência rigorosos;
-* Desligar ou reduzir agressividade da família em períodos de tendência muito forte;
-* Circuit breakers locais: se a família perde X% em um dia/semana, suspender.
-
-2. **Sensibilidade a Custos e Slippage**
-
-* Como há mais trades intraday:
-
-  * os custos podem corroer grande parte (ou toda) a edge;
-* Simulações que ignoram corretamente fees e slippage tendem a ser **ilusoriamente otimistas**.
-
-Guardrails:
-
-* Modelagem realista de custos em backtest;
-* Execução real em paper trading antes de live;
-* Limitação de número de trades por dia e por ativo.
-
-3. **Risco de Overfitting**
-
-* Mean reversion intraday é terreno fértil para overfitting:
-
-  * ajuste excessivo de parâmetros a um período histórico específico;
-* Estratégias que parecem ótimas em backtest podem colapsar em produção.
-
-Guardrails:
-
-* Divisão IS/OOS, cross-validation temporal, walk-forward;
-* Avaliar robustez de parâmetros (faixas de parâmetros e não pontos únicos);
-* Exigir período de paper trading significativo antes de alocação real.
-
-4. **Risco de Liquidez Local**
-
-* Em altcoins ou mercados menos líquidos:
-
-  * movimentos “bonitos” em gráfico não se traduzem em execuções decentes;
-* O slippage pode ser enorme, destruindo a expectativa de reversão lucrativa.
-
-Guardrails:
-
-* Operar mean reversion apenas em ativos e pares com liquidez robusta;
-* Limites de tamanho de ordem por ativo/timeframe.
-
----
-
 ### 11.8. Papel no Portfólio e Roadmap de Implementação
 
 No portfólio global, a família Mean Reversion de Curto Prazo é:
@@ -3571,80 +2836,17 @@ que só deve ser explorada **após** a consolidação das famílias mais robusta
 
 ## 12. Família 7 – Market Making / Liquidity Providing
 
-A família **Market Making / Liquidity Providing** busca capturar o **spread** entre compra e venda e, em alguns casos, rebates ou incentivos de liquidez oferecidos pela exchange, atuando como:
-
-> “quem sempre está disposto a comprar um pouco abaixo do mercado e vender um pouco acima, ganhando na diferença — desde que consiga controlar o risco de inventário e de cauda”.
-
-Dentro do framework, esta família é considerada:
-
-* **avançada**,
-* altamente dependente de **microestrutura de mercado** e de **infraestrutura de execução**,
-* com potencial de **Sharpe muito alto** quando bem implementada,
-* mas **pouco adequada** como prioridade inicial em ambiente single node, sem colocation nem foco em latência ultra-baixa.
-
-Por isso, ela aparece **no fim da ordem de implementação**: é planejada conceitualmente, preparada na arquitetura, mas só entra em produção quando o restante do ecossistema (dados, risco, execução, observabilidade) estiver maduro.
+A família **Market Making / Liquidity Providing** busca capturar o spread entre compra e venda. É uma estratégia avançada, dependente de microestrutura e infraestrutura de execução, e aparece no final do roadmap de implementação.
 
 ---
 
 ### 12.1. Descrição Conceitual
 
-Em linhas gerais, o market maker:
-
-1. **Coloca ordens passivas** (limit) de compra abaixo do preço atual e de venda acima do preço atual;
-2. Tenta **ser executado em ambos os lados**:
-
-   * compra mais barato;
-   * vende mais caro;
-   * realiza lucro no spread, mesmo que o preço não se mova muito;
-3. Administra seu **inventário**:
-
-   * evita ficar excessivamente comprado ou vendido;
-   * ajusta preços de bid/ask quando está “cheio” de inventário em uma direção.
-
-Em mercados spot sem derivativos:
-
-* a posição líquida tende a oscilar em torno de zero;
-* o objetivo não é “apostar na direção”, mas **girar inventário** em torno de um valor justo, ganhando micro-lucros repetidos.
-
-No contexto do projeto:
-
-* a família trabalha em **spot**, sem alavancagem explícita,
-* com foco em pares líquidos (por exemplo, BTCUSDT, ETHUSDT),
-* usando timeframes operacionais de **curto prazo**, mas não HFT.
+O market maker coloca ordens passivas de compra e venda para lucrar com o spread, gerenciando seu inventário para evitar exposição direcional excessiva. A estratégia opera em spot, com foco em pares líquidos e timeframes curtos, mas não HFT.
 
 ---
 
-### 12.2. Características e Desafios
-
-Market making tem algumas características específicas:
-
-* **Potencial de alta frequência de trades**:
-
-  * muitos fills pequenos ao longo do dia;
-* **Perfil de risco assimétrico**:
-
-  * ganha frequentemente pequenos spreads;
-  * pode perder muito em movimentos bruscos de preço (gap, rug, eventos de cauda);
-* **Altíssima sensibilidade a latência e microestrutura**:
-
-  * quanto mais rápida a reação a mudanças de preço, book e fluxos de ordens, maior a capacidade de:
-
-    * evitar “ser atropelado”;
-    * recotar preços de forma competitiva.
-
-Em um ambiente **single node sem colocation**:
-
-* é irrealista competir com HFT profissional estrito;
-* o foco precisa ser em:
-
-  * **estratégias de liquidez “mais lentas”**, com spreads mais largos;
-  * horizontes um pouco maiores (segundos a minutos, não microssegundos).
-
----
-
-### 12.3. Adaptação ao Contexto Spot, Single Node e Long/Flat
-
-Para aderir ao escopo do projeto, a família de Market Making é adaptada de forma conservadora:
+### 12.3. Implementação
 
 1. **Spot Only, sem alavancagem no núcleo**
 
@@ -3867,69 +3069,6 @@ Principais grupos de parâmetros:
 
 ---
 
-### 12.7. Riscos Específicos e Guardrails
-
-A família Market Making traz um conjunto de riscos próprios:
-
-1. **Risco de Cauda / Gap de Preço**
-
-* Em eventos bruscos (notícias, liquidações em cascata):
-
-  * ordens passivas podem ser executadas em massa contra a posição;
-  * o inventário pode disparar para um lado, resultando em grandes perdas se o preço continuar se movendo na direção adversa.
-
-Guardrails:
-
-* `kill-switch` local:
-
-  * se um candle/variação ultrapassar certo múltiplo de ATR ou X% em intervalo curto, o módulo:
-
-    * cancela todas as ordens;
-    * entra em modo de observação (não recota até estabilizar);
-* limites de inventário rígidos e automações que nunca permitam excedê-los.
-
-2. **Risco de Latência**
-
-* Em ambientes com latência variável:
-
-  * cotações podem se tornar “stale” (desatualizadas) rapidamente;
-  * aumentando a probabilidade de execução ruim.
-
-Guardrails:
-
-* Intervalos de refresh compatíveis com a latência observada;
-* Desativação automática se:
-
-  * latência de ida e volta para a exchange exceder certo limiar por período prolongado.
-
-3. **Risco de Rate Limit / Bloqueio de API**
-
-* Excesso de ordens e cancelamentos pode:
-
-  * atingir rate limits;
-  * resultar em bloqueios temporários.
-
-Guardrails:
-
-* Controle rígido de volume de ordens;
-* Monitoramento de respostas de API (códigos de erro específicos);
-* Modo de degradação:
-
-  * se aproximando do rate limit, reduzir frequência de refresh e/ou número de símbolos.
-
-4. **Risco de Transformar MM em Aposta Direcional Involuntária**
-
-* Sem gestão de inventário adequada:
-
-  * o “market maker” vira “holder” sem querer.
-
-Guardrails:
-
-* Regras de inventory bands respeitadas pelo módulo de risco;
-* Proibição de abrir novas ordens no mesmo sentido quando inventário atinge extremo permitido.
-
----
-
 ### 12.8. Papel no Portfólio e Roadmap de Implementação
 
 Dentro do portfólio global, Market Making / Liquidity Providing é visto como:
@@ -4006,21 +3145,7 @@ que só deve entrar em produção quando:
 
 ## 13. Gestão de Risco e Alocação de Capital
 
-A gestão de risco é tratada como um **módulo central e desacoplado** das estratégias.
-As famílias (TSM, Dual Momentum, Mean Reversion etc.) **não decidem quanto capital usar** nem conhecem detalhes de limites globais; elas apenas sugerem **posições alvo**. A decisão final – quanto realmente será alocado e se alguma ordem será bloqueada – pertence ao módulo de Risco e Alocação de Capital.
-
-O objetivo é:
-
-* Proteger o capital em diferentes níveis (trade, estratégia, família, portfólio, exchange);
-* Garantir que **nenhuma família ou estratégia isolada possa “quebrar” o sistema**;
-* Permitir alocação de capital alinhada à prioridade das famílias (robustez de evidência + retorno ajustado ao risco);
-* Manter tudo **observável e auditável**, com trilhas claras de por que uma posição foi ou não permitida.
-
----
-
-### 13.1. Camadas de Risco
-
-O sistema organiza o risco em **camadas hierárquicas**, que se sobrepõem para criar uma malha de proteção:
+A gestão de risco é um módulo central e desacoplado. As estratégias sugerem posições alvo, mas a decisão final de alocação e execução pertence a este módulo, que organiza o risco em camadas hierárquicas para proteger o capital.
 
 1. **Risco por Trade**
 
@@ -4075,11 +3200,7 @@ O sistema organiza o risco em **camadas hierárquicas**, que se sobrepõem para 
      * Correlação entre famílias.
    * É responsável por acionar **circuit breakers globais** quando o comportamento do portfólio entra em zona crítica.
 
-O módulo de risco avalia todas essas camadas antes de transformar um **sinal de posição alvo** em ordens reais. Se qualquer camada for violada, a posição é reduzida ou bloqueada, e o evento é registrado para auditoria.
-
----
-
-### 13.2. Limites e Guardrails
+### 13.2. Limites e Guardrails (Camadas de Risco)
 
 Os **guardrails** são regras numéricas que não podem ser quebradas, funcionando como um “guia de rodovia” para o sistema:
 
@@ -4135,36 +3256,9 @@ Esses guardrails são parametrizados e versionados, permitindo ajustes ao longo 
 
 ### 13.3. Alocação entre Famílias
 
-A alocação de capital entre famílias de estratégias segue a mesma filosofia geral do projeto: **priorizar abordagens com evidência mais robusta e melhor retorno ajustado ao risco**, ao mesmo tempo em que se busca diversificação.
-
-Há dois modos principais:
-
-1. **Regra Fixa (Alocação Estática)**
-
-   * Uma fração do equity é atribuída a cada família, com base em:
-
-     * Robustez da evidência histórica (por exemplo, TSM e Dual Momentum com pesos maiores);
-     * Objetivos do portfólio (por exemplo, preferência por estratégias de tendência vs estratégias de reversão).
-   * Exemplo ilustrativo:
-
-     * 40% em **Trend Following / TSM**;
-     * 25% em **Dual Momentum**;
-     * 15% em **Cross-Sectional Momentum**;
-     * 10% em **Mean Reversion**;
-     * 10% distribuídos entre **Value/Quality** e **Carry/Yield/Basis**, conforme disponibilidade de mercado.
-   * Essa regra é simples, transparente e fácil de auditar.
-
-2. **Regra Dinâmica (Alocação Adaptativa)**
-
-   * A alocação entre famílias varia ao longo do tempo, de acordo com:
-
-     * Performance recente ajustada ao risco (por exemplo, Sharpe ou Calmar em janela móvel);
-     * Estabilidade dos resultados (variação de drawdown);
-     * Correlação entre famílias (busca de descorrelação).
-   * Exemplo:
-
-     * A cada mês, recalcular o peso ótimo aproximado entre famílias com base em um conjunto de critérios (por exemplo, score que combina Sharpe recente, drawdown e correlação).
-   * É uma camada opcional, aplicada com cuidado para não gerar um sistema **hiper-reativo** (overfitting em janelas curtas).
+A alocação de capital entre famílias pode ser feita de duas formas principais:
+1.  **Regra Fixa (Alocação Estática):** Uma fração do equity é atribuída a cada família com base em critérios como robustez da evidência histórica.
+2.  **Regra Dinâmica (Alocação Adaptativa):** A alocação varia com base na performance recente ajustada ao risco, estabilidade e correlação entre famílias.
 
 Independente da regra (fixa ou dinâmica), o módulo de risco mantém:
 
@@ -4218,28 +3312,48 @@ Esse controle assegura que o portfólio não fique, por acidente, hiperconcentra
 
 ### 13.5. Circuit Breakers e Modo Seguro
 
-Os **circuit breakers** são mecanismos automáticos de proteção que entram em ação quando o sistema detecta situações críticas. Eles operam em três níveis:
+Os **circuit breakers (CBs)** são mecanismos automáticos de proteção que entram em ação quando o sistema detecta situações críticas. Eles operam em uma hierarquia para garantir uma resposta proporcional ao risco.
 
-1. **Circuit Breaker Local (Estratégia / Família)**
+#### 13.5.1. Circuit Breakers Hierárquicos
 
-   * Disparado quando:
+*   **Nível 1 - Por Estratégia (Instância):**
+    *   **Gatilho:** Drawdown da instância > 5% em 1 dia, ou > 10% no mês.
+    *   **Gatilho:** 5 trades perdedores consecutivos.
+    *   **Ação:** Pausa novas entradas para a instância (`pause-new-entries`), permitindo apenas o fechamento de posições existentes. Requer revisão manual para reativar.
 
-     * Uma instância ultrapassa sua perda diária/mensal máxima;
-     * Uma família atinge seu drawdown máximo definido;
-     * É detectado comportamento anômalo (por exemplo, sequência muito longa de trades perdedores fora do padrão histórico).
-   * Ação típica:
+*   **Nível 2 - Por Família:**
+    *   **Gatilho:** Drawdown agregado da família > 15% no mês.
+    *   **Gatilho:** Correlação entre instâncias da mesma família excede um limiar (ex: `ρ > 0.9`), indicando perda de diversificação interna.
+    *   **Ação:** Pausa novas entradas para toda a família e emite um alerta de alta prioridade.
 
-     * Desativar novas entradas para aquela instância/família;
-     * Permitir apenas saídas (fechamento ordenado das posições).
+*   **Nível 3 - Global (Portfólio Total):**
+    *   **Gatilho:** Drawdown total do portfólio > 20% desde o último high-water mark.
+    *   **Gatilho:** Perda intraday > 3% do equity total.
+    *   **Gatilho:** Taxa de erros da API da exchange > 10 erros/minuto por um período sustentado.
+    *   **Ação:** Ativação do **Modo Seguro Global (Safe Mode)**.
 
-2. **Circuit Breaker Global de Portfólio**
+#### 13.5.2. Modo Seguro (Safe Mode)
 
-   * Disparado quando:
+O **Modo Seguro** é o estado de proteção máxima do sistema, com o seguinte comportamento:
 
-     * O drawdown total do sistema atinge thresholds críticos;
-     * Há perda intradiária muito acima do esperado em termos estatísticos;
-     * problemas graves de mercado (crashes, falhas generalizadas em exchanges).
-   * Ação típica:
+1.  **Ação Imediata:**
+    *   Cancela todas as ordens abertas que não sejam de saída (stops/take-profits).
+    *   Bloqueia imediatamente o envio de quaisquer novas ordens de entrada.
+    *   Mantém as posições existentes, não força o fechamento para evitar a realização de perdas em pânico, a menos que uma política de "HALT ALL" seja explicitamente configurada.
+
+2.  **Notificação:**
+    *   Envia um alerta de criticidade máxima para os canais configurados (Telegram, e-mail) com o motivo do acionamento.
+
+3.  **Operação Degradada:**
+    *   O sistema continua monitorando posições e P&L, mas o core loop de geração de sinais é desativado.
+    *   Apenas fechamentos manuais de posição, após aprovação explícita, são permitidos.
+
+4.  **Saída do Modo Seguro:**
+    *   A saída do Modo Seguro **não é automática**. Requer uma intervenção manual e uma autorização explícita via configuração ou comando de governança, após a análise da causa raiz do problema.
+
+---
+
+O **modo seguro** é um estado explicitamente definido do sistema, com:
 
      * Forçar fechamento de todas as posições (quando isso é operacionalmente possível);
      * Entrar em **modo seguro** (safe mode), onde:
@@ -4258,12 +3372,6 @@ Os **circuit breakers** são mecanismos automáticos de proteção que entram em
      * Suspender temporariamente o envio de novas ordens para aquela exchange;
      * Bloquear qualquer automatismo que dependa de dados potencialmente corrompidos;
      * Notificar operadores para avaliação manual.
-
-O **modo seguro** é um estado explicitamente definido do sistema, com:
-
-* Conjunto mínimo de estratégias habilitadas (ou nenhuma);
-* Restrições ainda mais rígidas de tamanho de posição;
-* Aumento de log detalhado e notificações.
 
 ---
 
@@ -4326,21 +3434,7 @@ Em conjunto, a “Gestão de Risco e Alocação de Capital” garante que o sist
 
 ## 14. Backtesting, Simulação e Validação
 
-O módulo de **Backtesting, Simulação e Validação** é responsável por responder, com o máximo de rigor possível, às perguntas:
-
-* “Se essa estratégia existisse no passado, **como ela teria se comportado**?”
-* “Esse comportamento é **estatisticamente razoável** ou é apenas fruto de sorte/overfitting?”
-* “O que vemos em produção está **coerente** com o que foi observado nos testes?”
-
-Toda a arquitetura foi desenhada para que backtests, simulações e ambiente de produção compartilhem **a mesma lógica de domínio**, diferindo apenas nos adapters (dados históricos vs dados ao vivo, execução simulada vs execução real).
-
----
-
-### 14.1. Estrutura de Backtest
-
-A estrutura de backtest do sistema é organizada em torno de três elementos centrais:
-
-1. **Fonte de Dados Históricos Padronizada**
+O módulo de **Backtesting, Simulação e Validação** avalia o comportamento histórico das estratégias, sua robustez estatística e a coerência com a produção. A estrutura de backtest inclui uma fonte de dados históricos padronizada, um motor de execução temporal e configurações de cenário.
 
    * Candles históricos por `exchange/symbol/timeframe`, obtidos da própria exchange e armazenados em formato local (ex.: Parquet/CSV) com schema consistente.
    * Os mesmos mecanismos de normalização descritos no módulo de dados (timestamps, OHLCV, símbolos, precisão numérica) são aplicados também aos dados usados em backtest.
@@ -4371,26 +3465,7 @@ Essa estrutura permite reproduzir com fidelidade o comportamento operacional do 
 
 ### 14.2. Engine de Backtest Unificado
 
-O sistema adota um **engine de backtest unificado**, isto é, um motor que reutiliza:
-
-* A mesma **Strategy API** (métodos `prepare`, `generate_signals`, `post_trade_update`);
-* O mesmo **módulo de risco e alocação de capital**;
-* A mesma lógica de **gestão de estado** (posições, ordens, P&L).
-
-A única diferença é o adapter de execução:
-
-* Em produção: `TradingPort` conectado à exchange (Binance Spot no MVP);
-* Em backtest: `TradingPortSimulado`, que implementa:
-
-  * Regras de execução baseadas nos preços dos candles;
-  * Modelos de slippage e parcial fills;
-  * Regras de rejeição de ordens incoerentes (ex.: preço fora da faixa de negociação daquele candle).
-
-Benefícios dessa abordagem:
-
-* Diminuição da chance de divergência entre “o que foi testado” e “o que está rodando”;
-* Correções e melhorias em lógica de risco ou execução beneficiam tanto produção quanto backtest;
-* Facilita o uso de backtesting como ferramenta de **regressão**: qualquer mudança de código pode ser validada contra uma suíte padrão de cenários históricos.
+O sistema utiliza um **engine de backtest unificado** que reutiliza a mesma `Strategy API`, módulo de risco e gestão de estado da produção. A única diferença é o `TradingPortSimulado`, que simula a execução de ordens com base em dados históricos.
 
 ---
 
@@ -4473,40 +3548,7 @@ Esses cenários podem ser descritos e versionados em arquivos de configuração 
 
 ### 14.5. Validação Estatística
 
-A validação estatística é o conjunto de processos que tenta diferenciar **resultados genuínos** de **overfitting/ruído**. Entre os mecanismos previstos estão:
-
-1. **Divisão In-Sample / Out-of-Sample (IS/OOS)**
-
-   * O período total de backtest é dividido em:
-
-     * Janela de calibração (IS), usada para ajustar parâmetros;
-     * Janela de validação (OOS), usada apenas para avaliar se o desempenho se mantém.
-   * Parâmetros que funcionam muito bem em IS mas colapsam em OOS são considerados suspeitos.
-
-2. **Walk-Forward Analysis**
-
-   * Em vez de uma única divisão IS/OOS, são feitas várias janelas móveis:
-
-     * Calibra em uma janela histórica;
-     * Testa em uma janela imediatamente à frente;
-     * Avança o bloco e repete o processo.
-   * Isso simula o comportamento de uma estratégia que é periodicamente recalibrada, aproximando-se mais do uso real.
-
-3. **Validação Cruzada Temporal**
-
-   * Estruturas parecidas com cross-validation, mas respeitando a ordem temporal (sem embaralhar dados), permitindo múltiplas combinações de janelas para reduzir o risco de conclusões baseadas em um único recorte histórico.
-
-4. **Análise de Robustez de Parâmetros**
-
-   * Verificação de que as métricas de performance são razoavelmente estáveis em uma **vizinhança de parâmetros** (por exemplo, lookbacks próximos, thresholds ligeiramente diferentes).
-   * Estratégias que dependem de um ponto específico extremamente “afinado” e que colapsam com mudanças mínimas tendem a ser classificadas como pouco robustas.
-
-5. **Testes de Significância Simples**
-
-   * Comparação com benchmarks simples (buy & hold, estratégias aleatórias, random entries com mesmo turnover), para avaliar se a vantagem é realmente acima do ruído.
-   * Em alguns casos, podem ser aplicados testes estatísticos simples (por exemplo, comparação de distribuição de retornos) para reforçar a análise.
-
-Os resultados dessas etapas de validação são registrados como parte da **documentação da família de estratégia**, servindo de base para decisões de aprovação ou rejeição.
+A validação estatística busca diferenciar resultados genuínos de overfitting. Os mecanismos incluem: **Divisão In-Sample / Out-of-Sample (IS/OOS)**, **Walk-Forward Analysis**, **Validação Cruzada Temporal**, **Análise de Robustez de Parâmetros** e **Testes de Significância Simples**.
 
 ---
 
@@ -4600,21 +3642,7 @@ Com esse conjunto de mecanismos de **Backtesting, Simulação e Validação**, o
 
 ## 15. Execução em Produção e Core Loop
 
-A **execução em produção** é a materialização de tudo que foi definido em arquitetura, estratégias, risco e dados.
-O objetivo deste módulo é garantir que:
-
-* O sistema opere em **tempo real**, de forma previsível e observável;
-* O mesmo **fluxo conceitual do backtest** seja respeitado (isomorfismo);
-* Erros de infraestrutura (rede, API, disco) não se traduzam automaticamente em decisões de trading ruins;
-* A execução de ordens seja **segura, rastreável e reversível** sempre que possível.
-
-A seguir, detalha-se o **core loop operacional**, o comportamento no modo single exchange (Binance Spot), a evolução natural para multi-exchange, a gestão de estado, mecanismos de failover e recuperação, modos de operação e princípios de segurança na execução.
-
----
-
-### 15.1. Core Loop Operacional
-
-O **core loop** é o ciclo contínuo que, em produção, conecta:
+O **core loop** operacional é o ciclo contínuo que conecta em produção:
 
 > Dados de mercado → Estratégias → Risco → Ordens → Estado → Métricas
 
@@ -4749,24 +3777,7 @@ O modo single exchange permite um desenvolvimento mais seguro e controlado, serv
 
 ### 15.3. Evolução para Multi-Exchange
 
-Embora a produção inicial seja em Binance Spot, toda a lógica de execução é construída com **multi-exchange em mente**:
-
-1. **Portas Genéricas para Market Data e Trading**
-
-   * Estratégias não “sabem” que estão na Binance; elas operam sobre `MarketId` abstratos.
-   * Múltiplos adapters podem coexistir:
-
-     * `BinanceSpotAdapter`, `KrakenSpotAdapter`, `CoinbaseSpotAdapter`, etc.
-
-2. **Orquestração de Execução por Exchange**
-
-   * O Orquestrador é capaz de:
-
-     * Agrupar ordens por `exchange_id`;
-     * Respeitar limites de rate limit e políticas específicas de cada exchange;
-     * Atribuir janelas de execução diferentes conforme capacidades (por exemplo, algumas exchanges podem ter latência maior).
-
-3. **Risco e Alocação entre Exchanges**
+A lógica de execução é construída com multi-exchange em mente, utilizando portas genéricas para dados e trading, permitindo a coexistência de múltiplos adapters (ex: `BinanceSpotAdapter`, `KrakenSpotAdapter`). O orquestrador agrupa ordens por exchange, e o módulo de risco considera limites de exposição e alocação entre elas.
 
    * O módulo de risco (ver seção 13) passa a considerar:
 
@@ -4975,20 +3986,47 @@ Com essa estrutura de **Execução em Produção e Core Loop**, o sistema busca 
 
 ---
 
-## 16. Observabilidade e Telemetria
+### 15.8. Política de Rate Limits
 
-A camada de **Observabilidade e Telemetria** tem como objetivo responder, em tempo real e de forma retroativa, a três perguntas fundamentais:
+O sistema deve gerenciar proativamente os limites de requisição (rate limits) da exchange para evitar bloqueios.
 
-1. **O que está acontecendo agora?**
-2. **O que aconteceu ao longo do tempo?**
-3. **Por que o sistema tomou determinada decisão de trading?**
+*   **Limites Conhecidos (Exemplo Binance Spot):**
+    *   **REST API:** 1200 requisições/minuto (baseado em pesos).
+    *   **Ordens:** 50 ordens/10 segundos e 160.000 ordens/24 horas.
 
-Ela é transversal a todo o sistema: coleta sinais desde a aquisição de dados de mercado, passando por estratégias, módulo de risco, execução de ordens, até infraestrutura (CPU, memória, disco, rede).
-O foco é permitir **operação touch-zero**, com capacidade de **detecção precoce de problemas**, análise pós-mortem e **auditoria completa** das decisões de trading.
+*   **Estratégia de Mitigação:**
+    1.  **Token Bucket Local:** O sistema mantém um contador interno (token bucket) que representa a capacidade disponível, operando em um percentual seguro do limite real (ex: 95%).
+    2.  **Backoff Exponencial:** Ao receber um erro `429 (Too Many Requests)`, o sistema aguarda um tempo crescente antes de tentar novamente (ex: `backoff_base * 2^n`), até um máximo configurado.
+    3.  **Throttling Automático:** Se o uso de capacidade se aproxima de um limiar (ex: 80%), o sistema reduz a frequência de requisições não essenciais.
+    4.  **Circuit Breaker:** Se erros de rate limit se tornam persistentes, um circuit breaker de infraestrutura é acionado, pausando temporariamente as operações naquela exchange.
 
 ---
 
-### 16.1. Logs Estruturados
+### 15.9. Heartbeat e Health Checks
+
+Para garantir que o sistema está vivo e saudável, são implementados mecanismos de monitoramento contínuo.
+
+#### 15.9.1. Heartbeat Interno
+
+*   O core loop emite um sinal de "heartbeat" a cada ciclo de execução bem-sucedido.
+*   Um monitor externo ou um thread de watchdog verifica se o heartbeat está sendo recebido. Se um heartbeat não for recebido dentro de um timeout (ex: 3x o tempo de ciclo esperado), uma ação é tomada (log crítico, notificação, tentativa de reinício controlado).
+
+#### 15.9.2. Health Checks Periódicos
+
+A cada 60 segundos, o sistema executa uma série de verificações de saúde:
+
+*   **Conectividade com a Exchange:** Ping no endpoint REST e verificação do status da conexão WebSocket.
+*   **Atualidade dos Dados:** Verifica se a idade do último candle recebido é inferior a `2 * timeframe`.
+*   **Reconciliação de Posição:** Compara o estado de posição interno com o da exchange, alertando se o desvio (`drift`) exceder um limiar mínimo (ex: 0.01%).
+*   **Recursos do Sistema:** Verifica se o uso de disco e memória está abaixo de limiares críticos (ex: 85% e 90%, respectivamente).
+
+Se um health check crítico falhar por múltiplas vezes consecutivas (ex: 3x), o sistema pode ser configurado para entrar automaticamente em **Modo Seguro**.
+
+---
+
+## 16. Observabilidade e Telemetria
+
+A camada de **Observabilidade e Telemetria** é transversal e visa responder o que está acontecendo, o que aconteceu e por que o sistema tomou certas decisões. Ela permite operação com detecção precoce de problemas, análise pós-mortem e auditoria completa.
 
 Os logs são a base textual da observabilidade. No sistema, eles seguem os seguintes princípios:
 
@@ -5123,7 +4161,12 @@ A partir de logs e métricas, são construídos **dashboards** e **alertas autom
 
 #### Dashboards
 
-Ao menos três painéis principais são previstos:
+A stack de observabilidade evolui com o projeto:
+
+*   **Fase 1 (Minimalista):** Logs estruturados em JSON e métricas exportadas para arquivos CSV para análise offline.
+*   **Fase 2+ (Stack Local):** Introdução de **Prometheus + Grafana** (rodando localmente via Docker) para dashboards em tempo real e alertas robustos.
+
+Os painéis principais em Grafana incluem:
 
 1. **Dashboard de Saúde do Sistema**
 
@@ -5178,24 +4221,7 @@ Os alertas são enviados para canais configuráveis (por exemplo, Telegram, e-ma
 
 ### 16.5. Tracing de Estratégias
 
-**Tracing** é a capacidade de seguir, ponta a ponta, a cadeia:
-
-> Dado de mercado → Sinal → Decisão de Risco → Ordem → Execução → P&L
-
-No sistema, isso é feito com o uso de identificadores de correlação e registros detalhados em cada etapa:
-
-* **Correlation/Trace IDs**
-
-  * Cada “ciclo de decisão” (por estratégia/timeframe) recebe um `trace_id`.
-  * Todos os eventos gerados nesse ciclo (logs de estratégia, risco, ordens, fills) carregam esse mesmo `trace_id`.
-
-* **Ligação com Versões de Estratégia e Configuração**
-
-  * Para cada `trace_id`, são também registradas:
-
-    * Versão de código da estratégia (`strategy_version`);
-    * Versão de configuração (`config_version`), incluindo parâmetros de risco.
-
+O **Tracing** permite seguir a cadeia de decisão (dado -> sinal -> risco -> ordem -> P&L) usando `trace_id` para correlacionar eventos. Cada ciclo de decisão é associado a um `trace_id`, que também registra as versões de código e configuração da estratégia.
 * **Registro de Decisões Intermediárias**
 
   * Além do sinal final (posição alvo), podem ser registrados:
@@ -5279,25 +4305,11 @@ Com a combinação de **logs estruturados**, **métricas de sistema e negócio**
 * Responsável (cada decisão de trading é rastreável e explicável);
 * Pronto para escalar, tanto em complexidade de estratégias quanto em requisitos de governança.
 
-
 ---
 
 ## 17. Governança de Estratégias e Change Management
 
-A camada de **Governança de Estratégias e Change Management** define *como* novas ideias viram estratégias em produção, *como* essas estratégias são modificadas ao longo do tempo e *como* tudo isso é registrado, auditado e, quando necessário, revertido com segurança.
-
-O objetivo é evitar dois extremos igualmente perigosos:
-
-* De um lado, um sistema rígido demais, em que qualquer mudança é difícil e lenta;
-* De outro, um “laboratório solto”, em que ajustes de parâmetros e deploys em produção são feitos de forma ad hoc, sem registro ou avaliação estruturada.
-
-Aqui, governança não é burocracia: é **disciplina mínima** para proteger capital, preservar reprodutibilidade e permitir evolução contínua do portfólio de estratégias.
-
----
-
-### 17.1. Pipeline de Aprovação de Estratégias
-
-Toda estratégia (e, em menor grau, cada nova instância ou grande revisão de parâmetros) passa por um **pipeline padronizado de aprovação**, com etapas bem definidas:
+A camada de **Governança de Estratégias e Change Management** define o processo de como as estratégias são desenvolvidas, modificadas, registradas e auditadas. Toda estratégia passa por um pipeline de aprovação padronizado:
 
 1. **Proposta Conceitual**
 
@@ -5376,28 +4388,7 @@ Todas essas etapas são registradas na camada de auditoria (seção 16) com time
 
 ### 17.2. Versionamento de Estratégias e Configurações
 
-Em um sistema em constante evolução, **versionar estratégias e configurações** é crítico para entender mudanças de comportamento ao longo do tempo.
-
-#### 17.2.1. Versão de Estratégia (Código)
-
-Cada família/instância de estratégia possui atributos como:
-
-* `strategy_family` (ex.: `TSM`, `DUAL_MOMENTUM`);
-* `strategy_id` (ex.: `TSM_BTCUSDT_1D`);
-* `strategy_version` (ex.: `1.0.3`).
-
-A `strategy_version` muda quando há alterações de:
-
-* Lógica de decisão (regras de entrada/saída/filtros);
-* Dependências de dados (novos indicadores, mudanças de cálculo);
-* Implementação interna que possa impactar o comportamento (por exemplo, fix de bug que altere sinais históricos).
-
-Cada commit relevante para estratégias deve atualizar a versão de forma clara, permitindo:
-
-* Associar resultados de backtest/paper/live a uma versão exata de código;
-* Comparar performance entre versões.
-
-#### 17.2.2. Versão de Configuração
+O versionamento de estratégias (`strategy_version`) e configurações (`config_version`) é crucial. A `strategy_version` muda com alterações na lógica ou dependências de dados. A `config_version` rastreia mudanças em parâmetros, mercados e flags. A combinação de ambas define um comportamento completo e rastreável para cada execução.
 
 Além do código, há a **configuração**, que também é versionada:
 
@@ -5460,6 +4451,10 @@ Para rollback eficaz, o sistema precisa:
 O processo de rollback normalmente é:
 
 1. Identificação do problema:
+   * **Rollback Instantâneo via Feature Flagging**: O sistema deve permitir o rollback instantâneo de uma estratégia ou família para uma versão anterior (ou desativação completa) através da alteração de `feature flags` em tempo de execução, sem a necessidade de um novo deploy ou restart do processo principal.
+
+   1. Identificação do problema:
+
 
    * Métricas de risco ou erro saem do esperado;
    * Bugs ou comportamento errado de lógica são detectados.
@@ -5471,7 +4466,7 @@ O processo de rollback normalmente é:
      * Voltar para versão anterior;
      * Ou desativar a instância/família por segurança.
 
-3. Execução Técnica:
+   3. Execução Técnica:
 
    * Troca de configuração para a versão anterior (ou desativação);
    * Eventual ajuste de posições:
@@ -5479,7 +4474,7 @@ O processo de rollback normalmente é:
      * Ex.: fechamento de posições abertas pela versão nova, se julgado necessário.
 
 4. Registro em Auditoria:
-
+   
    * O rollback é registrado com:
 
      * Motivo;
@@ -5602,6 +4597,7 @@ Elementos essenciais:
      * Vinculação a backtests relevantes.
 
 7. **Decisões de Governança Relevantes**
+   * **Geração Automática**: A Ficha de Estratégia deve ser gerada automaticamente a partir dos arquivos de configuração declarativa (YAML/JSON) e do código-fonte da estratégia, garantindo que esteja sempre atualizada e consistente.
 
    * Promoções (backtest → paper → live);
    * Reduções de capital;
@@ -5626,21 +4622,7 @@ Com essa camada de **Governança de Estratégias e Change Management**, o sistem
 
 ## 18. Segurança e Compliance
 
-A camada de **Segurança e Compliance** define como o sistema protege:
-
-* o **capital** sob gestão,
-* as **credenciais** de acesso às exchanges,
-* os **dados** (de mercado, de execução e de logs),
-
-e, ao mesmo tempo, se mantém alinhado aos requisitos regulatórios e às boas práticas de mercado para um **sistema proprietário de trading algorítmico**.
-
-O foco é **Security by Design**: segurança não é um “add-on”, mas um conjunto de decisões incorporadas à arquitetura, ao desenvolvimento e à operação desde o início.
-
----
-
-### 18.1. Gestão de Credenciais e Segredos
-
-A gestão de segredos é tratada como ponto crítico, principalmente por envolver **API keys de exchanges** e eventuais credenciais de notificações (e-mail, Telegram etc.).
+A camada de **Segurança e Compliance** foca em proteger capital, credenciais e dados, seguindo o princípio de **Security by Design**. A gestão de segredos, como API keys, é um ponto crítico.
 
 Principais práticas:
 
@@ -5873,25 +4855,7 @@ A operação segura também depende de **ambientes bem delimitados**:
 
 ### 18.7. Requisitos Regulatórios e Compliance
 
-O sistema foi concebido, primeiro, como **ferramenta de trading proprietário (proprietary trading)**, isto é, operando apenas capital próprio.
-Nesse contexto:
-
-* Não há, a princípio, prestação de serviço de investimento a terceiros;
-* As obrigações regulatórias são, em geral, menos complexas (mas **podem variar por jurisdição**).
-
-Ainda assim, são consideradas as seguintes dimensões:
-
-* **Classificação da Atividade**
-
-  * Caso, em etapas futuras, o sistema passe a:
-
-    * Gerir capital de terceiros;
-    * Oferecer sinais ou execução como serviço;
-  * Pode ser necessária:
-
-    * Autorização de órgão regulador (ex.: CVM, SEC, ou equivalente local);
-    * Adequação a regras de suitability, informação ao investidor, segregação de contas.
-
+O sistema é projetado para **trading proprietário**, operando capital próprio, o que simplifica as obrigações regulatórias. No entanto, qualquer evolução para gerir capital de terceiros ou oferecer serviços de investimento exigirá autorização de órgãos reguladores e adequação a normas específicas.
 * **Registro e Retenção de Dados**
 
   * Mesmo como trading proprietário, manter:
@@ -5973,483 +4937,35 @@ Com esse conjunto de práticas e mecanismos, a camada de **Segurança e Complian
 
 ## 19. Roadmap de Evolução
 
-O Roadmap de Evolução define **como** o sistema sai de um protótipo focado em uma única família de estratégias (TSM, spot, single exchange) e progride, em etapas controladas, até um **framework maduro**, multi-família, preparado para multi-exchange e multi-ativo, mantendo sempre o foco em:
-
-* **retorno ajustado ao risco**
-* **robustez operacional**
-* **simplicidade compatível com single node**
-
-Não há compromisso com datas fixas: as fases são **blocos lógicos**, que podem ser ajustados em função de tempo disponível, capital, resultados de pesquisa e restrições externas (por exemplo, acesso a novos mercados).
+O Roadmap de Evolução define a progressão do sistema em fases lógicas, desde um protótipo até um framework maduro, multi-família e multi-ativo.
 
 ---
 
-### 19.1. Princípios Orientadores do Roadmap
+## 20. Ambiente de Desenvolvimento, Testes e CI/CD
 
-Antes das fases, o roadmap se apoia em alguns princípios:
+Esta seção define o ambiente e os processos para garantir um desenvolvimento de software consistente, testável e seguro.
 
-1. **Segurança e controle > velocidade de expansão**
+### 20.1. Setup de Desenvolvimento Local
 
-   * Nenhuma nova família de estratégia entra em produção sem:
+*   **Ambiente Reprodutível:** O ambiente de desenvolvimento local é gerenciado via **Docker e Docker Compose**.
+*   **Dependências Core:** O projeto utiliza **Python 3.11+** como base. As bibliotecas principais são gerenciadas por um gerenciador de pacotes (como Poetry ou pip com `requirements.txt`).
+*   **Configuração de IDE:** Recomenda-se o uso de IDEs como VS Code ou PyCharm, com plugins para `black`, `ruff` e `mypy`.
 
-     * backtest coerente com a tese;
-     * período mínimo em paper trading;
-     * integração com o módulo de risco e observabilidade.
+### 20.2. Testes Automatizados
 
-2. **Complexidade progressiva**
+*   **Testes Unitários:** Utiliza-se `pytest`. Módulos críticos de domínio devem ter cobertura de testes superior a 80%.
+*   **Testes de Integração:** Testes que validam a interação entre componentes, como a comunicação com adapters de exchange (usando mocks ou a **testnet** da exchange).
+*   **Testes End-to-End (E2E):** Execução de um conjunto de **backtests de referência** que validam o pipeline completo, de dados a P&L, para garantir que mudanças no código não causem regressões inesperadas nos resultados das estratégias.
 
-   * Começar pelo **simples e robusto** (TSM, spot, single asset);
-   * Só depois adicionar:
+### 20.3. Pipeline de Integração e Deploy Contínuo (CI/CD)
 
-     * multi-ativo, multi-família;
-     * estratégias mais frágeis (mean reversion intraday, market making);
-     * integrações com derivativos e outras classes de ativos.
+*   **Linting e Formatação:** O pipeline de CI (ex: GitHub Actions) executa automaticamente `black` (formatação), `ruff` (linting rápido) e `mypy` (checagem de tipos) em cada Pull Request.
+*   **Execução de Testes:** Todos os testes (unitários, integração) são executados no pipeline. Um PR só pode ser mesclado se todos os testes passarem.
+*   **Deploy Controlado:** O deploy para ambientes de produção é feito de forma controlada, idealmente com tags de versão e um processo que permita um rollback rápido.
 
-3. **Isomorfismo backtest ↔ produção**
+### 20.4. Git Workflow
 
-   * Sempre que possível, a **mesma lógica de estratégia e de risco** usada em produção é usada no backtest (mesmo código, modos diferentes);
-   * Evita divergências “fantasiosas” entre o que funciona no histórico e o que acontece na prática.
-
-4. **Desacoplamento e modularidade**
-
-   * Estratégias não enviam ordens: geram sinais de posição alvo;
-   * Módulo de risco decide o que pode ou não ser executado;
-   * Módulo de execução fala com a exchange;
-   * Observabilidade e governança registram tudo.
-
-5. **Preparado para multi-exchange, operando inicialmente com uma só**
-
-   * Desde cedo, os módulos devem ser pensados com **camada de abstração por exchange** (adapters), mesmo que apenas Binance Spot esteja ativa no início.
-
----
-
-### 19.2. Fase 0 – Fundação Arquitetural e Organizacional
-
-**Objetivo:** estabelecer a base técnica e organizacional mínima para todo o restante do projeto.
-
-Principais entregas:
-
-* **Estrutura de repositório e módulos**
-
-  * Separação clara entre:
-
-    * dados (ingestão, caching);
-    * estratégias;
-    * risco;
-    * execução;
-    * observabilidade;
-    * governança/configuração.
-
-* **Modelo de configuração central (ex.: YAML + Pydantic)**
-
-  * Estratégias, exchanges, símbolos, timeframes, limites de risco e modos (backtest/paper/live) definidos de forma declarativa.
-
-* **Padrões de desenvolvimento e CI básico**
-
-  * Formatação, lint, testes unitários iniciais;
-  * Pipeline simples para rodar testes e (quando aplicável) backtests de sanidade.
-
-* **Segurança mínima**
-
-  * API keys fora do código (variáveis de ambiente ou arquivo criptografado);
-  * Usuário de sistema dedicado;
-  * Princípio do menor privilégio em acessos.
-
-Essa fase não mira lucro nem produção, mas **preparar terreno** para tudo que vem depois.
-
----
-
-### 19.3. Fase 1 – MVP Técnico: TSM Single Asset em Spot
-
-**Objetivo:** colocar em pé a primeira estratégia completa, ponta a ponta, em modo ainda experimental.
-
-Escopo principal:
-
-* **Família 1 – TSM básica, single asset (por exemplo, BTCUSDT)**
-
-  * Timeframe diário (ou 4h/1D), lookback único;
-  * Regras simples de:
-
-    * compra quando retorno L > 0;
-    * ficar em cash quando retorno L ≤ 0.
-
-* **Aquisição de dados de mercado (Binance Spot)**
-
-  * Backfill histórico de OHLCV;
-  * Coleta periódica de novos candles;
-  * Normalização de timestamps e símbolos.
-
-* **Motor de backtest mínimo**
-
-  * Capaz de:
-
-    * simular TSM em histórico;
-    * modelar custos básicos (fees, slippage fixo simplificado);
-    * calcular métricas simples (retorno, DD, Sharpe).
-
-* **Módulo de execução simplificado**
-
-  * Enviar ordens spot reais ou simuladas (dependendo do modo);
-  * Reconciliar posição com a exchange.
-
-* **Logs estruturados e P&L básico**
-
-  * Logar decisões da estratégia;
-  * Manter P&L por estratégia/ativo.
-
-A saída desejada desta fase é: **um pipeline inteiro funcionando** com TSM em um único ativo, provando que a arquitetura “fecha” do dado à ordem e de volta à auditoria.
-
----
-
-### 19.4. Fase 2 – Endurecimento do Núcleo: Risco, Observabilidade e Governança
-
-**Objetivo:** transformar o MVP em um núcleo confiável, apto a operar TSM com pequeno capital real.
-
-Eixos principais:
-
-* **Módulo de Gestão de Risco Multicamadas (mínimo viável)**
-
-  * Limites por trade e por instância TSM;
-  * Limite de DD diário/semanal/mensal global;
-  * Circuit breaker global simples:
-
-    * excedeu DD → para novas entradas, só permite saídas.
-
-* **Backtest mais fiel à produção**
-
-  * Uso das mesmas funções de:
-
-    * cálculo de sinais;
-    * aplicação de risco;
-    * regra de execução simplificada.
-  * Melhor modelagem de custos:
-
-    * fees variáveis;
-    * slippage proporcional à volatilidade ou volume.
-
-* **Observabilidade inicial**
-
-  * Logs estruturados por componente (dados, estratégia, risco, trading);
-  * Métricas básicas:
-
-    * latência do loop;
-    * número de ordens;
-    * P&L por dia;
-    * drawdown corrente.
-
-* **Governança mínima de estratégias**
-
-  * Processo simples de:
-
-    * “TSM v1.0” → backtest → paper → live;
-    * versionamento de estratégia e de configuração.
-
-Ao fim dessa fase, TSM single asset pode ser operada em **modo live com capital pequeno**, com riscos controlados e capacidade de entender o que o sistema está fazendo.
-
----
-
-### 19.5. Fase 3 – Expansão de Famílias de Momentum em Spot Multi-Ativo
-
-**Objetivo:** sair do “TSM single asset” e evoluir para um **núcleo multi-ativo e multi-família de momentum**, ainda em mercado spot e single exchange.
-
-Componentes:
-
-* **Multi-ativo para TSM (Família 1)**
-
-  * Estender TSM para operar uma **cesta de ativos** (ex.: top N pares cripto líquidos);
-  * Introduzir:
-
-    * filtros de liquidez;
-    * limites de exposição por ativo.
-
-* **Família 2 – Dual Momentum**
-
-  * Implementar:
-
-    * filtro TSM (momentum absoluto) sobre o universo;
-    * ranking cross-sectional (momentum relativo);
-    * seleção de top N/X% ativos para alocação;
-  * Integração com módulo de portfólio:
-
-    * distribuição de capital entre TSM “single asset”, TSM multi-ativo e Dual Momentum.
-
-* **Família 3 – Cross-Sectional Momentum (CSM long-only)**
-
-  * Implementar CSM puro, com:
-
-    * ranking por retornos passados;
-    * top N vencedores long-only;
-  * Alocação controlada (capital pequeno inicialmente), dada maior fragilidade da família.
-
-* **Portfolio Manager e Alocação entre Famílias**
-
-  * Introdução de um módulo de **alocação de capital entre famílias**:
-
-    * orçamento de risco/capital por família (TSM, Dual, CSM);
-    * limites de concentração por ativo e por exchange.
-
-* **Preparação para Multi-Exchange (camada de abstração)**
-
-  * Mesmo continuando com Binance Spot como **única exchange ativa**, introduzir:
-
-    * interface genérica de “exchange adapter”;
-    * estrutura de configuração que permita incluir novas exchanges no futuro sem reescrever o núcleo.
-
-Ao final da Fase 3, o sistema já opera:
-
-* um conjunto de ativos;
-* três famílias de momentum (TSM, Dual, CSM);
-* com módulo de risco e portfólio coordenando a exposição global.
-
----
-
-### 19.6. Fase 4 – Estratégias Táticas de Curto Prazo e Infra Intraday
-
-**Objetivo:** introduzir, de forma cuidadosa, a **Família 6 – Mean Reversion de Curto Prazo (Intraday/Swing)** e endurecer a infraestrutura intraday.
-
-Componentes:
-
-* **Versão inicial de Mean Reversion de curto prazo**
-
-  * Em 1–2 ativos de alta liquidez (por exemplo, BTCUSDT, ETHUSDT);
-  * Timeframes como 15m, 1h, 4h;
-  * Sinais baseados em:
-
-    * oversold/overbought (RSI, bandas, ATR, etc.);
-    * filtros de tendência em timeframe superior.
-
-* **Melhoria na infraestrutura de dados intraday**
-
-  * Coleta confiável de candles intraday;
-  * Detecção e correção (ou marcação) de gaps;
-  * Testes de performance da ingestão em single node.
-
-* **Refinamento do módulo de risco para alta frequência relativa**
-
-  * Limites de:
-
-    * número de trades por dia/família;
-    * perda diária por família de mean reversion;
-  * Circuit breakers específicos:
-
-    * sequência de perdas;
-    * DD intradiário.
-
-* **Otimização e pesquisa estruturada**
-
-  * Estrutura para rodar:
-
-    * backtests de grade (grid) de parâmetros;
-    * análises de sensibilidade;
-    * pequenos experimentos de otimização (ex.: busca heurística, não necessariamente algo pesado como Optuna nesta fase).
-
-* **Observabilidade reforçada para intraday**
-
-  * Métricas de:
-
-    * latência do core loop em timeframes mais curtos;
-    * slippage efetivo vs modelado;
-    * distribuição de P&L por hora/sessão.
-
-Ao término desta fase, a família Mean Reversion deve estar, pelo menos, em **paper trading bem-validado**, com eventual entrada em live com capital muito controlado.
-
----
-
-### 19.7. Fase 5 – Carry/Yield em Spot e Primeiros Passos em Basis
-
-**Objetivo:** introduzir, de forma conservadora, a **Família 4 – Carry / Yield / Basis**, começando por yield spot e, só depois, experiments com basis/funding.
-
-Etapas:
-
-* **Módulo de Yield Spot (estável e sem alavancagem)**
-
-  * Seleção de:
-
-    * oportunidades de yield em stablecoins;
-    * staking de ativos “blue chips”;
-  * Foco em:
-
-    * exposição pequena do portfólio;
-    * limites de contraparte e protocolo bem definidos.
-
-* **Integração do Carry/Yield com o Portfólio Global**
-
-  * Definição de um **budget de risco/capital** para a família;
-  * Métricas específicas de:
-
-    * yield bruto e ajustado ao risco;
-    * correlação com outras famílias.
-
-* **Planejamento do módulo de Basis/Funding (opcional)**
-
-  * Em nível de design:
-
-    * como integrar derivativos (perp/futuros) no framework;
-    * como o módulo de risco lidará com margem e risco de liquidação;
-  * Eventuais testes inicias em **testnet** ou ambiente simulado:
-
-    * long spot + short perp em cenários de funding positivo.
-
-* **Reforço de segurança e compliance**
-
-  * Especialmente se houver contato com derivativos:
-
-    * garantir segregação de chaves;
-    * avaliar implicações regulatórias mínimas, mesmo como trading proprietário.
-
-Ao final da Fase 5, a família Carry/Yield deve, idealmente, atuar como **camada pequena de yield estrutural**, com basis ainda em estágio experimental, se for o caso.
-
----
-
-### 19.8. Fase 6 – Value + Quality e Integração Multi-Classe
-
-**Objetivo:** preparar e introduzir a **Família 5 – Value + Quality**, focada em ações spot, e dar os primeiros passos reais em **multi-classe de ativos**.
-
-Passos principais:
-
-* **Integração com fonte(s) de dados de ações e fundamentals**
-
-  * Conectores para:
-
-    * preços de ações spot (via corretoras ou APIs de mercado);
-    * dados fundamentais (P/L, P/B, ROE, margens, dívida etc.).
-
-* **Implementação da família Value + Quality em ações**
-
-  * Definição de universo (ex.: índice amplo, ações líquidas);
-  * Cálculo de scores de Value e Quality;
-  * Seleção de portfólio long-only de médio/longo prazo;
-  * Rebalance de baixa frequência (trimestral, semestral).
-
-* **Extensão do módulo de risco para multi-classe**
-
-  * Limites de exposição por classe (cripto, ações, stable/yield);
-  * Visualizações e métricas de risco agregadas multi-ativo.
-
-* **Ajustes na alocação de capital entre famílias**
-
-  * Inserir Value + Quality como:
-
-    * “perna de longo prazo”;
-    * com peso crescente à medida que a infraestrutura e a convicção aumentem.
-
-* **Abstração madura de multi-exchange**
-
-  * Com ações e cripto:
-
-    * consolidar o modelo de adapters de exchange/corretora;
-    * permitir que estratégias sejam parametrizadas por “fonte de execução” (exchange X, broker Y).
-
-Ao final da Fase 6, o sistema evolui de um “algotrader cripto” para um **framework multi-ativo**, com famílias pensadas para horizontes e estilos diferentes.
-
----
-
-### 19.9. Fase 7 – Market Making Estruturado e Microestrutura
-
-**Objetivo:** ativar, com muita cautela, a **Família 7 – Market Making / Liquidity Providing**, inicialmente em formato experimental.
-
-Etapas:
-
-* **Simulador de microestrutura e book off-line**
-
-  * Modelo simplificado de:
-
-    * evolução de mid price;
-    * execuções contra ordens passivas;
-  * Testes das lógicas de:
-
-    * spreads;
-    * bands de inventário;
-    * cancelamento/recolocação de ordens.
-
-* **Paper Trading com dados de book reais**
-
-  * Consumir book da exchange (ao menos best bid/ask, idealmente depth);
-  * Simular execuções localmente;
-  * Avaliar:
-
-    * eficiência de spreads;
-    * risco de inventário;
-    * sensibilidade a latência.
-
-* **Live Experimental com Volume Ínfimo**
-
-  * Operar 1–2 pares extremamente líquidos (ex.: BTCUSDT, ETHUSDT);
-  * Notional muito pequeno;
-  * Limites de risco muito apertados;
-  * Observabilidade reforçada.
-
-* **Integração como Componente Complementar de Portfólio**
-
-  * Se mostrar robustez:
-
-    * alocação moderada de capital;
-    * monitoramento contínuo de DD e risco de cauda.
-
-Dadas as exigências dessa família, ela permanece sempre como **módulo avançado opcional**, não obrigatório para o sucesso do framework.
-
----
-
-### 19.10. Trilhas Transversais Contínuas
-
-Ao longo de todas as fases, há trilhas que **não são “fases isoladas”**, mas iniciativas contínuas:
-
-1. **Segurança e Compliance**
-
-   * Refino contínuo de:
-
-     * gestão de chaves;
-     * hardening de ambiente;
-     * procedimentos de resposta a incidentes;
-   * Avaliação regular de riscos regulatórios, especialmente se:
-
-     * forem adicionadas novas classes de ativos;
-     * houver qualquer passo na direção de capital de terceiros.
-
-2. **Governança e Documentação**
-
-   * Manter sempre atualizados:
-
-     * fichas de estratégias (família, instância, parâmetros, riscos);
-     * changelog de versões;
-     * registros de decisões de promoção/desativação de estratégias.
-
-3. **Observabilidade e Telemetria**
-
-   * Evoluir dashboards e alertas conforme o sistema fica mais complexo:
-
-     * novas famílias;
-     * multi-exchange;
-     * multi-ativo.
-
-4. **Performance e Eficiência em Single Node**
-
-   * Monitorar custo computacional de:
-
-     * ingestão de dados;
-     * geração de sinais;
-     * backtests;
-   * Ajustar:
-
-     * número de estratégias ativas;
-     * frequência de reprocessamentos;
-     * caching local (datasets, features).
-
-5. **Pesquisa e Otimização Estruturadas**
-
-   * Criar e manter uma “esteira de pesquisa”:
-
-     * experimentos em novos parâmetros e variações de família;
-     * backtests padronizados;
-     * relatórios comparáveis;
-   * Sempre com visão de evitar overfitting e preservar robustez.
-
----
-
-Em conjunto, o **Roadmap de Evolução** garante que o sistema:
-
-* não tente “abraçar o mundo” de uma vez;
-* avance de forma **ordenada e disciplinada**,
-* sempre com a visão central em mente:
-
-> construir, em single node, um **framework de famílias de estratégias sistemáticas** para mercado spot (e, depois, multi-ativo), com foco em **retorno ajustado ao risco**, governança forte e capacidade de evolução incremental.
-
+*   **Feature Branches:** Todo o desenvolvimento é feito em `feature branches` a partir da branch principal (`main`).
+*   **Pull Requests (PRs):** Mudanças só são incorporadas à branch principal através de Pull Requests, que exigem a aprovação de ao menos um outro revisor e a passagem de todos os checks de CI.
+*   **Versionamento Semântico:** O projeto segue o Semantic Versioning (ex: `1.2.5`). As versões são gerenciadas através de tags no Git.
+*   **Changelog:** Um `CHANGELOG.md` é mantido, idealmente de forma semi-automatizada, para registrar as mudanças significativas em cada versão.
