@@ -117,9 +117,21 @@ Além do sinal principal de tendência (retorno no lookback), TSM utiliza uma s�
 
   * buracos de dados significativos;
   * candles marcados como “suspeitos” ou “corrompidos”;
-* A geração de sinal pode ser suspensa, para evitar decisões com base em dados ruins.
+*   A geração de sinal pode ser suspensa, para evitar decisões com base em dados ruins.
 
-5. **Filtros de Overlap com Outras Famílias (futuro)**
+5. **Filtro de Regime de Whipsaw (Anti-Whipsaw)**
+
+*   **Objetivo:** Detectar mercados laterais e voláteis onde a TSM classicamente sofre, gerando múltiplos sinais falsos (whipsaws) e acumulando pequenas perdas.
+*   **Detecção:** O regime pode ser identificado por uma combinação de:
+    *   **Baixa Força de Tendência:** Indicadores como ADX abaixo de um limiar (ex: < 20).
+    *   **Alta Frequência de Cruzamento de Média:** Número elevado de cruzamentos de preço sobre uma média móvel em uma janela recente.
+    *   **Baixo Win-Rate Recente:** Queda no percentual de trades vencedores da própria estratégia.
+*   **Ação:** Quando o regime de whipsaw é detectado, o sistema pode tomar ações automáticas para se proteger:
+    *   **Reduzir Exposição:** Diminuir o tamanho da posição para novas entradas (ex: operar com 50% do capital normal).
+    *   **Aumentar Lookbacks:** Usar janelas de lookback mais longas para o sinal de tendência, tornando-o menos sensível a ruídos de curto prazo.
+    *   **Pausar Entradas:** Suspender temporariamente novas entradas até que um indicador de tendência mostre novamente um sinal claro.
+
+6. **Filtros de Overlap com Outras Famílias (futuro)**
 
 * Em versões mais avançadas, TSM pode:
 
@@ -1999,3 +2011,31 @@ que só deve entrar em produção quando:
 * e houver disciplina suficiente para tratá-la como componente **complementar**, não como pilar principal do sistema.
 
 ---
+
+## 13. Família 8 – Anti-Fragile
+
+A família **Anti-Fragile** é projetada para ter um desempenho positivo ou ser ativada especificamente em regimes de alta volatilidade e estresse de mercado. Ela atua como um complemento direto às estratégias de Trend Following (TSM), que historicamente sofrem em períodos de alta volatilidade sem tendência clara.
+
+---
+
+### 13.1. Descrição Conceitual
+
+A estratégia opera sob uma premissa simples: "ficar quieto na maior parte do tempo e agir de forma decisiva quando o mercado entra em pânico ou euforia". Ela utiliza indicadores de volatilidade (como o BVOL da Deribit, o VIX, ou a volatilidade realizada de curto prazo) como um filtro primário.
+
+A lógica central é:
+
+1.  **Filtro de Regime:** A estratégia permanece inativa (`flat`) enquanto a volatilidade estiver abaixo de um limiar crítico.
+2.  **Gatilho de Ativação:** Quando a volatilidade implícita ou realizada dispara (ex: `BVOL > 70%`), o sistema "acorda" e procura por oportunidades.
+3.  **Sinal Direcional:** Uma vez ativada pelo filtro de volatilidade, a estratégia busca uma tendência clara de curto prazo para se posicionar. Por exemplo, pode usar um TSM de janela curta (ex: 10-20 dias) para decidir a direção.
+
+O resultado é uma estratégia que tende a ficar em `cash` durante mercados calmos e laterais, mas entra de forma agressiva para capturar grandes movimentos que ocorrem durante picos de volatilidade, melhorando o perfil de retorno do portfólio global, especialmente em crises.
+
+---
+
+### 13.2. Papel no Portfólio
+
+*   **Hedge de Regime:** Atua como um "seguro" contra os períodos de "whipsaw" que prejudicam as estratégias de TSM de longo prazo.
+*   **Exposição Convexa:** Oferece uma exposição convexa a eventos de cauda, potencialmente gerando grandes retornos durante crises de mercado.
+*   **Diversificação:** Por operar em um regime de mercado distinto, sua correlação com outras famílias tende a ser baixa ou negativa em momentos críticos.
+
+*(Esta seção será expandida com detalhes de implementação, parametrização e métricas específicas conforme a estratégia for desenvolvida no roadmap).*

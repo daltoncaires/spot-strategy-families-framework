@@ -154,6 +154,36 @@ O projeto se apoia em algumas **premissas** e está sujeito a certas **restriç�
   * Não se baseia em serviços externos de dados proprietários, colocation ou FPGA;
   * As decisões são tomadas a partir de dados públicos das exchanges e histórico armazenado localmente.
 
+--
+
+### 1.7. Portfólio Inicial (MVP Expandido) e Ordem de Maturidade
+
+Embora o framework suporte múltiplas famílias de estratégias, a implementação segue uma ordem de maturidade rigorosa para garantir a construção de um portfólio robusto sobre uma base sólida.
+
+#### 1.7.1. Escopo do Portfólio Inicial
+
+O MVP expandido se concentrará nas famílias de **Momentum**, que possuem a maior robustez e adequação ao ambiente `spot long/flat`. Um portfólio inicial realista inclui:
+
+*   **Família TSM (Time-Series Momentum) - Âncora do Portfólio:**
+    *   **Instância 1 (Live):** `TSM_BTC_1D` - Estratégia principal em Bitcoin, timeframe diário.
+    *   **Instância 2 (Live):** `TSM_ETH_1D` - Diversificação em um segundo ativo de alta liquidez.
+    *   **Instância 3 (Paper):** `TSM_BTC_MULTI_HORIZON` - Versão em paper trading que combina múltiplos lookbacks para pesquisa.
+
+*   **Família Dual Momentum - Força Relativa com Proteção:**
+    *   **Instância 1 (Live):** `DUAL_MOM_TOP10_1W` - Opera em um universo das 10 criptos mais líquidas, com rebalanceamento semanal.
+
+*   **Família CSM (Cross-Sectional Momentum) - Agressivo (Observação):**
+    *   **Instância 1 (Paper):** `CSM_TOP10_1W` - Roda em `paper trading` para comparar seu comportamento com a versão Dual Momentum antes de qualquer alocação de capital real.
+
+Isso totaliza aproximadamente **3-4 instâncias em `live`** e **2 em `paper`**, um escopo gerenciável que já oferece diversificação de estratégias e ativos.
+
+#### 1.7.2. Rigidez da Ordem de Maturidade
+
+A ordem de implementação (`TSM → Dual → CSM → Carry → Mean Reversion → ...`) é uma **diretriz forte baseada em princípios de risco**, não uma lei imutável.
+
+*   **Regra:** Nenhuma família de menor prioridade (ex: Market Making) será implementada antes que as famílias de maior prioridade (ex: TSM) estejam estáveis em produção e que a infraestrutura de suporte (risco, dados, execução) esteja madura.
+*   **Exceções:** Uma exceção pode ser considerada para uma oportunidade de baixo risco e baixa complexidade (ex: um yield simples em stablecoins) que não exija nova infraestrutura. Tal exceção deve ser justificada e passar pelo pipeline de governança completo, sempre com alocação de capital significativamente menor que a das famílias principais.
+
 ---
 
 Em resumo, a **Visão Geral do Projeto** define um framework que:
@@ -361,6 +391,15 @@ Os requisitos não funcionais definem qualidades esperadas do sistema, além do 
 
 * Problemas operacionais e de risco devem ser **detectáveis rapidamente**, com diagnóstico facilitado (correlação entre logs, métricas e eventos).
 
+#### 2.2.6. Sincronização de Tempo
+
+*   **Requisito de NTP:** O nó de operação **deve** estar continuamente sincronizado com uma fonte de tempo confiável via NTP (Network Time Protocol).
+*   **Tolerância a Desvio (Clock Drift):** O desvio máximo tolerado do relógio do sistema em relação ao tempo UTC verdadeiro não deve exceder 500 milissegundos. Um desvio maior deve ser tratado como um incidente crítico de infraestrutura.
+*   **Justificativa:** A precisão do tempo é crítica para:
+    *   **Auditoria e Logs:** Correlacionar eventos do sistema com os da exchange.
+    *   **Limites de Candle:** Garantir que as decisões sejam tomadas no momento correto do fechamento do candle.
+    *   **Autenticação de API:** Muitas exchanges rejeitam requisições se o timestamp do cliente estiver muito desalinhado.
+
 ---
 
 ### 2.3. Premissas Operacionais
@@ -396,30 +435,33 @@ A qualidade dos dados da exchange é considerada "suficiente", com outliers e ga
 
 ---
 
-### 2.4. Critérios de Sucesso (KPIs de Projeto)
+### 2.4. Critérios de Sucesso e SLOs (Service Level Objectives)
 
-Para avaliar se o sistema está cumprindo seu objetivo, são definidos alguns **indicadores-chave de performance (KPIs)** em duas dimensões: **técnica** e **de trading**.
+Para avaliar se o sistema está cumprindo seu objetivo, são definidos **SLOs (Service Level Objectives)** para a dimensão técnica e **KPIs (Key Performance Indicators)** para a dimensão de trading.
 
-#### 2.4.1. KPIs Técnicos
+#### 2.4.1. SLOs Técnicos
 
-* **Uptime do Sistema**
+* **SLO de Uptime do Core Loop**
 
-  * % do tempo em que o core loop está operacional, com conexão válida à exchange e módulos principais ativos.
+  * **Métrica:** % do tempo em que o core loop está operacional, com conexão válida à exchange e módulos principais ativos.
+  * **Meta:** `>= 99.5%` de uptime mensal.
 
-* **Taxa de Erros Críticos**
+* **SLO de Confiabilidade (Incidentes Críticos)**
 
-  * Número de incidentes que exigem intervenção manual (ex.: queda completa, falhas de reconciliação, bugs de risco/trading) por mês.
+  * **Métrica:** Número de incidentes que exigem intervenção manual (classificados como `SEV-1` ou `SEV-2`) por mês.
+  * **Meta:** `<= 2` incidentes por mês.
 
-* **Latência de Decisão**
+* **SLO de Latência de Decisão**
 
-  * Tempo médio entre o fechamento de um candle relevante e o envio das ordens correspondentes.
+  * **Métrica:** Tempo (percentil 95) entre o fechamento de um candle relevante e o envio das ordens correspondentes.
+  * **Meta:** `p95 <= 3 segundos`.
 
-* **Cobertura de Testes e Backtests de Regressão**
+* **KPI de Qualidade de Código**
 
   * % de módulos críticos cobertos por testes automatizados;
   * Suite de backtests padrão executada em mudanças de versões de estratégia.
 
-#### 2.4.2. KPIs de Trading e Risco
+#### 2.4.2. KPIs de Trading e Risco (Metas de Performance)
 
 Não se espera que o sistema “garanta lucro”, mas há métricas-alvo que indicam se a **arquitetura + processo + famílias de estratégias** estão no caminho desejado:
 
@@ -493,27 +535,28 @@ O sistema adota uma combinação de:
 
 Abaixo, os principais blocos lógicos da arquitetura:
 
-1. **Orquestrador / Scheduler de Estratégias**
-
-   * Responsável por coordenar quando cada estratégia roda (por timeframe, família, prioridade).
-   * Enfileira tarefas de: coleta de dados, execução de sinais, flush de métricas, backtests agendados etc.
-   * Implementação single-node, possivelmente sobre `asyncio` e filas in-process.
-
 2. **Módulo de Domínio de Estratégias**
 
-   * Contém as **famílias de estratégias** (TSM, Dual Momentum, Cross-Sectional, Carry, Value/Quality, Mean Reversion, Market Making).
+   * Contém as **famílias de estratégias** (TSM, Dual Momentum, Cross-Sectional, Carry, Value/Quality, Mean Reversion, Market Making, Anti-Fragile).
    * Cada família expõe uma interface padrão:
 
      * `prepare(data_context)`, `generate_signals()`, `post_trade_update()`.
 
 3. **Camada de Dados de Mercado (Market Data Layer)**
 
-   * Implementa a `MarketDataPort`:
+   *   **Coleta de Dados:**
+       *   **WebSocket First:** Prioriza a conexão a streams WebSocket da exchange para receber dados de trades em tempo real.
+       *   **Candle Builder Local:** Um componente interno agrega os trades recebidos via WebSocket para construir candles (OHLCV) em múltiplos timeframes (1m, 5m, 1h, etc.). Isso reduz drasticamente o consumo de rate limits da API REST.
+       *   **REST para Backfill:** A API REST é usada principalmente para preencher dados históricos (`backfill`) ou para reconciliação.
+   *   **Processamento e Armazenamento:**
+       *   **Stack de Performance:** Utiliza **Polars** para manipulação de DataFrames em memória e **DuckDB + Ibis** para cálculos analíticos pesados e transformações de dados, garantindo alta performance.
+       *   **Cache de Features:** Implementa um cache em memória com TTL (Time-To-Live) para features de lookback longo (ex: retorno de 252 dias), evitando recálculos desnecessários a cada ciclo.
+   *   **Interface (`MarketDataPort`):**
 
      * Subscribe/stream de candles via WebSocket;
      * Fetch de histórico via REST;
      * Acesso a dados locais (SQLite/Parquet) para backtests.
-   * Responsável por **normalizar** campos (timestamps, OHLCV, símbolos, fuso horário) e detectar buracos ou inconsistências.
+   *   **Normalização:** Responsável por normalizar campos (timestamps, OHLCV, símbolos) e detectar inconsistências.
 
 4. **Camada de Execução de Ordens (Trading Layer)**
 
@@ -572,13 +615,28 @@ Abaixo, os principais blocos lógicos da arquitetura:
 
 ### 3.4. Fluxo Geral (Core Loop)
 
-O **core loop** é o coração do sistema e deve ser o mais simples e previsível possível, tanto em produção quanto em backtest. Em termos gerais:
+O **core loop** é o coração do sistema, orquestrando o pipeline de decisão de ponta a ponta. A escolha por um orquestrador customizado baseado em `asyncio` em vez de ferramentas como Airflow ou `cron` é deliberada e alinhada com os princípios de simplicidade e adequação ao ambiente single-node.
 
-1. **Agendamento**
+#### 3.4.1. Modelo de Orquestração: Fila de Prioridade Assíncrona
 
-   * O scheduler acorda em função do timeframe e da família de estratégia (ex.: TSM diário, Mean Reversion a cada minuto, Dual Momentum a cada fechamento de candle de 4h).
+O sistema não executa múltiplos DAGs concorrentes. Em vez disso, ele opera com um **único pipeline lógico** gerenciado por uma **fila de prioridade assíncrona (`asyncio.PriorityQueue`)**.
 
-2. **Aquisição e Atualização de Dados**
+1.  **Scheduler:** Um componente agendador popula a fila com tarefas baseadas em eventos de tempo (ex: fechamento de candle de 1m, 1h, 1d). Tarefas de maior frequência recebem maior prioridade.
+2.  **Worker Único:** Um único "worker" (uma corrotina `async`) consome as tarefas da fila de forma sequencial. Isso elimina condições de corrida na lógica de negócio, pois apenas uma decisão de portfólio está sendo calculada por vez.
+3.  **Concorrência de I/O:** A eficiência vem do `asyncio`, que permite que tarefas de I/O (chamadas de API, leitura de disco) de diferentes estágios do pipeline ocorram de forma concorrente, sem bloquear o processo.
+
+#### 3.4.2. Tratamento de Atrasos e Integridade
+
+*   **Atraso de Dados:** Se um dado esperado (ex: novo candle) não chega no tempo previsto, o sistema aplica uma política de tolerância configurável (ex: aguardar até 10% do tempo do candle). Se o atraso persistir, um alerta de `DATA_STALE` é gerado, e a execução para aquele ativo é pausada para evitar decisões baseadas em dados obsoletos.
+*   **Integridade do Pipeline:** O pipeline é atômico por ciclo. Se uma etapa crítica falhar (ex: erro no cálculo de risco), o ciclo para aquela tarefa é abortado, um erro é logado, e nenhuma ordem é enviada, garantindo que decisões parciais ou corrompidas não cheguem à camada de execução.
+
+#### 3.4.3. Fluxo do Pipeline
+
+1. **Orquestração (Scheduler)**
+
+   * O scheduler acorda em função do tempo (ex: a cada minuto) ou de eventos (ex: novo candle de 1h construído localmente) e adiciona tarefas à fila de prioridade.
+
+2. **Aquisição e Construção de Dados**
 
    * O módulo de Market Data busca ou recebe o último candle/tick;
    * Atualiza o storage local (para garantir histórico consistente);
@@ -586,10 +644,10 @@ O **core loop** é o coração do sistema e deve ser o mais simples e previsíve
 
 3. **Enriquecimento de Dados**
 
-   * Funções de “data enrichment” calculam indicadores e features necessárias por família:
+   * O pipeline de dados (usando **Ibis + DuckDB** e **Polars**) calcula de forma otimizada os indicadores e features para todas as estratégias ativas.
 
      * EMAs, ADX, retornos acumulados, rankings cross-section, volatilidade, spreads etc.
-   * São respeitados os **lookbacks mínimos** para não gerar sinais com dados incompletos.
+   * Utiliza o **cache de features** para evitar recálculos de indicadores de longo prazo.
 
 4. **Execução de Estratégias**
 
@@ -820,75 +878,50 @@ Todo esse pipeline é descrito por um **schema interno de dados**, que define ca
 
 ---
 
-### 4.7. Persistência de Dados
-
-A persistência de dados é projetada para um **ambiente single node**, priorizando:
-
-* **Simplicidade operacional** (sem necessidade de cluster de banco);
-* **Reprodutibilidade** (facilidade para reconstruir séries históricas no mesmo nó ou em outro ambiente);
-* **Desempenho adequado** para volumes típicos de cripto spot.
-
-As decisões principais são:
-
-* Uso de **SQLite** para dados transacionais e de estado:
-
-  * Metadados de mercados (lista de símbolos, filtros, timeframes suportados);
-  * Estado operacional (posições, ordens, trades);
-  * Registros de execução (sinais, decisões de risco, P&L agregado) e eventos de auditoria.
-
-* Uso de formatos de arquivo do tipo **Parquet/CSV** (ou similar) para:
-
-  * Séries históricas de candles por `exchange/symbol/timeframe`;
-  * Armazenamento de séries derivadas usadas em pesquisas e backtests (indicadores, scores, labels).
-
-* Em fases mais maduras (Fase 4+ do roadmap), para análises mais pesadas, pode-se introduzir **DuckDB** para consultas analíticas sobre os arquivos Parquet, combinando a simplicidade do SQLite para o estado transacional com a performance do DuckDB para analytics.
-
-A organização típica é:
-
-* Particionamento por:
-
-  * `exchange_id`;
-  * `symbol`;
-  * `timeframe`;
-  * janelas de tempo (por exemplo, ano/mês).
-* Convenção de nomes consistente, permitindo localizar rapidamente:
-
-  * `market_data/{exchange}/{symbol}/{timeframe}/YYYY-MM.parquet`.
-
-Essa estrutura facilita:
-
-* Reutilização de dados em múltiplos backtests;
-* Inspeção manual para debug;
-* Versão e migração de schema (novos campos podem ser adicionados mantendo compatibilidade com o formato atual).
-
----
-
 ### 4.8. Schema Discovery e Feature Flags
 
-Um pilar do projeto é tratar a **API da exchange como fonte única da verdade (SSOT)** para o universo de mercados. Isso se concretiza em dois mecanismos centrais:
+Um pilar do projeto é tratar a **API da exchange como fonte única da verdade (SSOT)** para o universo de mercados. No entanto, para mitigar os riscos de instabilidade ou bugs na API da exchange (um ponto central de fragilidade), o sistema implementa um pipeline robusto de **"Discovery -> Validation -> Activation"**.
 
 1. **Schema Discovery**
 
-   * Na inicialização (e em ciclos periódicos), o sistema consulta a exchange para descobrir:
+   * Na inicialização e em ciclos periódicos (ex: a cada 6-24 horas), o sistema consulta a exchange para descobrir:
 
      * Quais símbolos existem e seus filtros (`min_qty`, `min_notional`, `step_size`, `price_tick_size`…);
      * Quais mercados estão em status `TRADING` vs `HALTED/DELISTED`;
      * Quais timeframes e endpoints de market data estão disponíveis;
      * Quais tipos de ordem podem ser usados (market, limit, stop-limit, OCO…).
-   * Esses dados são traduzidos para um **schema interno versionado**, armazenado em SQLite/Parquet, e exposto ao restante do sistema como:
+   * O schema descoberto **não é ativado imediatamente**. Ele passa por um processo de validação e quarentena.
+
+2. **Validação, Quarentena e Ativação do Schema**
+
+   * **Validação de Sanidade (Sanity Checks):** Antes de ser considerado, o novo schema é comparado com a última versão válida conhecida. Ele é rejeitado se:
+     * O número de símbolos `TRADING` diminuir drasticamente (ex: >10%).
+     * Um filtro crítico (ex: `min_notional`) mudar de forma abrupta (ex: >100x).
+     * Contiver valores ilógicos (ex: `min_qty` negativo ou inconsistências entre `min_qty`, `price` e `min_notional`).
+   * **Quarentena e Teste em Sombra:** Se o novo schema passar na validação de sanidade, ele entra em estado de **`QUARANTINED`**. Nesse estado, o sistema o utiliza em modo `paper trading` ou em simulações internas por um período (ex: 1 hora) para garantir que ele não causa erros de execução.
+   * **Versionamento e Ativação:** Se o schema em quarentena não apresentar problemas, ele é promovido para `ACTIVE`, salvo como um **artefato versionado e imutável** (ex: `schema_binance_spot_2024-05-20T14:00:00Z.json`), e o ponteiro `latest_valid.json` é atualizado.
+   * **Política de Rollback:** Se a validação ou a quarentena falharem, o sistema **continua usando o último schema válido conhecido**, gera um alerta `CRITICAL` para o operador e não adota o schema defeituoso.
+   * **Cache:** O sistema carrega o schema `latest_valid` em memória na inicialização e o utiliza para todas as operações, evitando consultas constantes à API.
+
+3. **Patches Locais de Schema (Emergência)**
+
+   * Em casos raros onde a API da exchange retorna um erro óbvio e persistente que não é pego pela automação, o sistema permite a aplicação de **patches manuais**.
+   * Um arquivo de override (ex: `schema_patches.yml`) pode ser usado para forçar um valor específico para um filtro de um símbolo, por exemplo:
+     ```yaml
+     - exchange: 'binance_spot'
+       symbol: 'BTC/USDT'
+       patch:
+         price_tick_size: 0.01 # Força o tick_size para 0.01
+     ```
+   * Esta é uma medida de exceção, que deve ser acompanhada de um alerta e de um processo para remover o patch assim que a exchange corrigir o problema.
+
+4. **Feature Flags**
+
+   * Sobre o schema **validado e ativo**, o sistema aplica **regras de habilitação** em diversos níveis:
 
      * `MarketCapabilities`;
      * `TimeframeCapabilities`;
      * `OrderCapabilities`.
-
-2. **Feature Flags**
-
-   * Sobre esse schema descoberto, o sistema aplica **regras de habilitação** em diversos níveis:
-
-     * Por exchange (`features.exchange.binance.enabled`);
-     * Por mercado (`features.market.BTCUSDT.enabled`);
-     * Por timeframe (`features.timeframe.1m.enabled`);
-     * Por família de estratégia (`features.strategy_family.tsm.allowed_exchanges`).
    * Os feature flags podem:
 
      * Bloquear mercados considerados ilíquidos ou perigosos;
@@ -896,10 +929,59 @@ Um pilar do projeto é tratar a **API da exchange como fonte única da verdade (
      * Habilitar apenas algumas famílias de estratégias em uma exchange nova até que ela seja totalmente validada.
 
 ---
-### 4.8.1. Modelo de Dados (Entidades Core)
 
-As entidades de dados são definidas usando modelos tipados (Pydantic) para garantir consistência e validação.
+### 4.9. Estratégia de Armazenamento e Ciclo de Vida dos Dados
 
+A estratégia de armazenamento é projetada para um ambiente single-node, equilibrando performance, custo e simplicidade operacional.
+
+#### 4.9.1. Separação de Responsabilidades
+
+*   **SQLite (Estado Transacional):**
+    *   **O que armazena:** Estado operacional de alta frequência de acesso e baixa volumetria: posições, ordens, P&L, metadados de mercado, logs de auditoria críticos.
+    *   **Justificativa:** Ideal para transações rápidas e consistentes. É o "cérebro" operacional. A resiliência é garantida pela replicação com Litestream (ADR-014).
+
+*   **Parquet (Séries Temporais Históricas):**
+    *   **O que armazena:** Dados históricos de alta volumetria e baixa frequência de escrita: candles, trades, dados de book.
+    *   **Justificativa:** Formato colunar otimizado para compressão e leitura analítica rápida (usado em backtests e pesquisa). A organização é particionada por `exchange/symbol/timeframe/date`.
+
+#### 4.9.2. Política de Retenção e Rotação de Dados
+
+Para gerenciar o uso de disco e manter a performance, uma política de ciclo de vida move os dados entre camadas de armazenamento (Hot, Warm, Cold).
+
+| Camada | Propósito | Armazenamento Típico | Política de Retenção (Dados de Mercado) | Ação no Final |
+| :--- | :--- | :--- | :--- | :--- |
+| **Hot** | Operação em tempo real e backtests de curto prazo. | SSD NVMe Local | **Timeframes <= 1h:** Últimos 30 dias. <br> **Timeframes > 1h:** Últimos 90 dias. | Mover para Warm. |
+| **Warm** | Pesquisa e backtests de médio prazo. | HDD Local | **Timeframes <= 1h:** 30 a 180 dias. <br> **Timeframes > 1h:** 90 dias a 2 anos. | Mover para Cold. |
+| **Cold** | Armazenamento de longo prazo para auditoria e pesquisa histórica. | Armazenamento em nuvem (S3) ou HD externo. | **Todos os timeframes:** Até 5+ anos. | Descartar ou arquivar. |
+
+*   **Compactação:** Todos os artefatos em Parquet são compactados usando **Zstandard (ZSTD)** para otimizar o espaço em disco.
+*   **Automação:** Um job agendado (ex: semanal) é responsável por executar a rotação, movendo e compactando os dados entre as camadas.
+
+#### 4.9.3. Exemplo de Estrutura de Diretórios
+
+A organização dos dados no disco segue uma estrutura particionada para facilitar a consulta e o gerenciamento.
+
+```
+/data/
+├── portfolio.db             # SQLite: Estado operacional (HOT)
+├── portfolio.db-wal         # SQLite: Write-Ahead Log
+├── market_data/
+│   ├── hot/                 # Camada HOT (SSD)
+│   │   └── binance_spot/
+│   │       └── BTCUSDT/
+│   │           ├── 1m/
+│   │           │   └── date=2024-05-20.parquet
+│   │           └── 1d/
+│   │               └── date=2024-05-20.parquet
+│   ├── warm/                # Camada WARM (HDD)
+│   │   └── ...
+│   └── cold/                # Camada COLD (montagem de S3/NFS)
+│       └── ...
+└── artifacts/
+    └── backtests/
+        └── run_id_xyz/
+            └── report.html
+```
 ```python
 # Exemplo de definição de entidade com Pydantic
 from enum import Enum
@@ -1204,7 +1286,64 @@ A gestão de risco é um módulo central e desacoplado. As estratégias sugerem 
      * Drawdown total do sistema;
      * Exposição total por classe de ativo (cripto, FX, ações);
      * Correlação entre famílias.
+   * **Correlation Circuit Breaker:** Implementa um circuit breaker que monitora a correlação média móvel entre os P&Ls das principais famílias de estratégias. Se a correlação exceder um limiar crítico (ex: `ρ > 0.7` por um período sustentado), indicando uma perda de diversificação, o sistema automaticamente reduz a exposição total do portfólio para mitigar o risco de um movimento adverso impactar todas as estratégias simultaneamente.
    * É responsável por acionar **circuit breakers globais** quando o comportamento do portfólio entra em zona crítica.
+
+---
+
+### 13.1. Modelo de Configuração de Risco e Priorização
+
+A implementação da gestão de risco hierárquico se baseia em um modelo de configuração declarativo e um sistema de priorização explícito.
+
+#### 13.1.1. Configuração de Limites
+
+Os limites são definidos em arquivos de configuração (YAML), seguindo uma hierarquia do global para o específico. O sistema sempre aplica o limite **mais restritivo**.
+
+1.  **Configuração Global (`portfolio.yml`):** Define os limites máximos para todo o sistema.
+    ```yaml
+    # portfolio.yml
+    risk_config:
+      global_max_drawdown_pct: 0.20  # 20% de DD máximo para o portfólio
+      global_max_daily_loss_pct: 0.03 # 3% de perda diária máxima
+      max_exposure_per_asset:
+        default: 0.25 # 25% de exposição máxima por ativo
+        overrides:
+          "BTC": 0.40 # BTC pode ter até 40%
+      strategy_family_priorities:
+        - TSM: 1
+        - DualMomentum: 2
+        - MeanReversion: 3
+    ```
+
+2.  **Configuração por Instância (`strategy_instance.yml`):** Cada instância define seus próprios limites, que não podem exceder os globais.
+    ```yaml
+    # tsm_btc_daily_v1.yml
+    strategy_id: "tsm_btc_daily_v1"
+    family: "TSM"
+    risk_config:
+      max_drawdown_pct: 0.15 # Limite de DD para esta instância
+      max_risk_per_trade_pct: 0.005 # 0.5% do capital da instância por trade
+    ```
+
+#### 13.1.2. Priorização entre Estratégias Concorrentes
+
+Quando múltiplas estratégias competem pelo mesmo capital ou limite de risco de um ativo, a alocação segue um processo determinístico:
+
+1.  **Prioridade Estática por Família:** O arquivo `portfolio.yml` define a prioridade de cada família de estratégia. Famílias mais robustas (ex: TSM) têm prioridade sobre as mais táticas (ex: Mean Reversion).
+2.  **Alocação Sequencial:** Para um dado ativo (ex: BTC), o módulo de risco processa os sinais na ordem de prioridade da família. Ele aloca o capital para a estratégia de prioridade 1 até seu limite. Se sobrar "orçamento de risco" no ativo, ele passa para a estratégia de prioridade 2, e assim por diante.
+3.  **Alocação Pro-Rata (Opcional):** Dentro da mesma família e nível de prioridade, se múltiplas instâncias competem, o capital pode ser dividido proporcionalmente aos seus pesos ou sinais.
+
+Isso garante que, em momentos de alta demanda por um ativo, as estratégias consideradas mais seguras e estruturais sejam sempre atendidas primeiro.
+
+#### 13.1.3. Tratamento de Dados de Risco Obsoletos (Stale State)
+
+O módulo de risco se protege contra decisões baseadas em informações desatualizadas (ex: P&L ou posições não atualizadas devido a um atraso no módulo de dados).
+
+1.  **Sincronização de Ciclo:** O `core loop` garante que o ciclo de decisão só seja executado após a confirmação de que todos os dados de entrada (mercado, estado do portfólio) estão "frescos".
+2.  **Idade Máxima do Estado (`max_state_age`):** Cada snapshot do estado do portfólio (`PortfolioState`) possui um `timestamp`. O módulo de risco possui um parâmetro de segurança, `max_state_age` (ex: 15 segundos).
+3.  **Circuit Breaker de Estado:** Antes de avaliar qualquer sinal, o módulo de risco verifica `now() - portfolio_state.timestamp`. Se essa diferença exceder `max_state_age`, ele se recusa a processar qualquer sinal, bloqueia novas ordens e dispara um alerta `CRITICAL` de `STALE_STATE`. A operação só é retomada quando o estado volta a ser atualizado em tempo hábil.
+
+---
 
 ### 13.2. Limites e Guardrails (Camadas de Risco)
 
@@ -1258,25 +1397,6 @@ Os **guardrails** são regras numéricas que não podem ser quebradas, funcionan
 
 Esses guardrails são parametrizados e versionados, permitindo ajustes ao longo do tempo sem alteração da lógica central de risco.
 
----
-
-### 13.3. Alocação entre Famílias
-
-A alocação de capital entre famílias pode ser feita de duas formas principais:
-1.  **Regra Fixa (Alocação Estática):** Uma fração do equity é atribuída a cada família com base em critérios como robustez da evidência histórica.
-2.  **Regra Dinâmica (Alocação Adaptativa):** A alocação varia com base na performance recente ajustada ao risco, estabilidade e correlação entre famílias.
-
-Independente da regra (fixa ou dinâmica), o módulo de risco mantém:
-
-* **Cap de alocação por família** (ninguém ultrapassa seu teto máximo, mesmo em cenários excepcionais);
-* Logs detalhados de decisões de realocação, permitindo reconstruir por que, em determinado dia, uma família teve sua alocação aumentada ou reduzida.
-
----
-
-### 13.4. Controle de Exposição Cambial (FX vs Cripto vs Fiat)
-
-Mesmo em um contexto primariamente de cripto spot, o sistema precisa de uma **visão consolidada da exposição cambial**, especialmente quando operações envolvem:
-
 * Diversos pares (BTC/USDT, ETH/USDT, BNB/BTC etc.);
 * Conversão final para uma moeda de referência (por exemplo, USD ou BRL);
 * Eventual inclusão futura de FX e ações.
@@ -1316,28 +1436,36 @@ Esse controle assegura que o portfólio não fique, por acidente, hiperconcentra
 
 ---
 
-### 13.5. Circuit Breakers e Modo Seguro
+### 13.3. Alocação entre Famílias e Volatility Targeting Global
 
-Os **circuit breakers (CBs)** são mecanismos automáticos de proteção que entram em ação quando o sistema detecta situações críticas. O sistema implementa CBs em múltiplos níveis (Estratégia, Família, Global) e um **Modo Seguro** para proteção máxima.
+A alocação de capital entre famílias e a exposição total do portfólio são controladas por uma camada superior de risco.
 
-Os procedimentos detalhados de operação e resposta a esses eventos estão documentados no **OPERATIONS_RUNBOOK.md**.
+1.  **Alocação Base entre Famílias:**
+    *   **Regra Fixa (Estática):** Uma fração do equity é atribuída a cada família com base em critérios de robustez e perfil de risco.
+    *   **Regra Dinâmica (Adaptativa):** A alocação pode variar com base na performance recente ajustada ao risco, estabilidade e correlação entre famílias.
+
+2.  **Volatility Targeting Global (Ajuste de Exposição Total):**
+    *   **O que é:** Um mecanismo que ajusta a **exposição total do portfólio** para atingir uma meta de volatilidade anualizada (ex: `target_vol = 15%`).
+    *   **Como funciona:**
+        1.  O sistema calcula a **volatilidade realizada** do portfólio em uma janela recente (ex: 20-60 dias).
+        2.  Calcula um fator de escala: `fator = target_vol / volatilidade_realizada`.
+        3.  A **exposição total permitida** é ajustada por este fator (com limites, ex: `max_leverage = 1.0` para spot). Se a volatilidade do mercado dobra, a exposição do portfólio é cortada pela metade.
+    *   **Impacto:** Este é o principal mecanismo para controlar o risco de forma proativa. Em períodos de alta volatilidade, o sistema automaticamente se torna mais conservador, e em períodos de calmaria, pode aumentar a exposição para capturar retornos.
 
 ---
 
-### 13.6. Instrumentação para Medição de Risco
+### 13.4. Controle de Exposição Cambial (FX vs Cripto vs Fiat)
 
-A gestão de risco só é eficaz se for **medida, monitorada e auditada continuamente**. Por isso, o sistema inclui uma camada de instrumentação dedicada ao risco, integrada à observabilidade geral.
-
-Elementos principais:
-
-1. **Métricas em Tempo Real**
-
-   * Exposição atual por:
+Mesmo em um contexto primariamente de cripto spot, o sistema precisa de uma **visão consolidada da exposição cambial**, especialmente quando operações envolvem:
 
      * Estratégia, família, ativo, exchange, moeda;
    * Risco por trade (estimado) e risco agregado;
    * Drawdown corrente (intradiário, mensal, máximo desde o início);
    * Utilização de “risk budget” por camada (quanto de cada limite já foi consumido).
+* **Slippage e Custos**
+  * **Slippage Real vs. Modelado:** Métrica que compara, para cada `fill`, o preço de execução real contra o preço de referência no momento da decisão (ex: `close` do candle). Essa métrica é agregada por estratégia para validar a aderência do backtest.
+  * **Taxas Totais (Fees):** Custo total de transação pago, agregado por dia, semana e mês.
+
 
 2. **Eventos de Risco**
 
@@ -1365,6 +1493,10 @@ Elementos principais:
      * Heatmaps de exposição;
      * Indicadores de “proximidade” a limites (por exemplo, barra de progressão mostrando o quanto falta para atingir o DD máximo mensal);
      * Alertas visuais quando circuit breakers são acionados.
+
+   * **Dashboard de Consumo de Risco (Risk Budget Consumption):** Um dashboard dedicado que mostra, em tempo real, o percentual do "orçamento de risco" total que está sendo consumido por cada família, ativo e pelo portfólio global. Isso oferece uma visão muito mais intuitiva do risco ativo do que apenas o P&L.
+
+   * **Heatmap de Portfólio:** Visualização em formato de heatmap que mostra a exposição e a correlação entre os diferentes componentes do portfólio, facilitando a identificação de concentrações de risco.
 
 5. **Integração com Notificações**
 
@@ -1412,6 +1544,26 @@ Essa estrutura permite reproduzir com fidelidade o comportamento operacional do 
 
 ---
 
+### 14.1. Fluxo de Trabalho de Pesquisa e Validação: A Dualidade Vetorizada vs. Isomórfica
+
+Para equilibrar a necessidade de velocidade na pesquisa com a exigência de fidelidade na validação, o framework suporta dois modos de teste distintos, que formam um fluxo de trabalho em duas etapas:
+
+1.  **Modo de Pesquisa Vetorizada (Rápido):**
+    *   **Objetivo:** Exploração em larga escala, como `parameter sweeps` e `walk-forward` inicial. O foco é identificar rapidamente os parâmetros mais promissores e descartar os ruins.
+    *   **Como Funciona:** Este modo **não utiliza o `core loop` de eventos**. Em vez disso, ele opera diretamente sobre os dados históricos usando a stack de alta performance (**Polars** e **DuckDB/Ibis**). A lógica de geração de sinais é aplicada de forma vetorial a todo o dataset de uma vez. O P&L é calculado também de forma vetorial, com uma modelagem de custos simplificada.
+    *   **Vantagens:** Extremamente rápido, permitindo milhares de execuções em um curto espaço de tempo.
+    *   **Limitações:** Baixa fidelidade. Não simula a lógica de risco de portfólio, dependência de caminho ou a dinâmica de execução do `core loop`.
+
+2.  **Modo de Simulação Isomórfica (Fiel):**
+    *   **Objetivo:** Validação de alta fidelidade dos melhores candidatos a parâmetros encontrados no modo de pesquisa. É o "selo de aprovação" final antes do `paper trading`.
+    *   **Como Funciona:** Utiliza o **engine de backtest unificado** (descrito abaixo), que simula o `core loop` evento a evento, reutilizando o mesmo código de domínio, risco e alocação da produção.
+    *   **Vantagens:** Altíssima fidelidade, fornecendo a estimativa mais realista do desempenho esperado.
+    *   **Limitações:** Lento, sendo inadequado para exploração em larga escala.
+
+Este fluxo de trabalho garante que o tempo de desenvolvimento e pesquisa seja usado de forma eficiente: velocidade máxima na exploração e fidelidade máxima na validação.
+
+---
+
 ### 14.2. Engine de Backtest Unificado
 
 O sistema utiliza um **engine de backtest unificado** que reutiliza a mesma `Strategy API`, módulo de risco e gestão de estado da produção. A única diferença é o `TradingPortSimulado`, que simula a execução de ordens com base em dados históricos.
@@ -1446,6 +1598,19 @@ Um backtest sem modelagem adequada de custos tende a ser **irrealisticamente oti
      * O tamanho máximo executável em um candle;
      * A velocidade de execução (dividindo ordens grandes ao longo de múltiplos candles).
    * Isso evita backtests onde uma estratégia executo volumes irreais sem impacto no mercado.
+
+4. **Impacto de Mercado (Modelagem Avançada de Slippage)**
+
+   * Para ordens que representam uma fração significativa do volume do candle, o modelo pode simular um **slippage adicional** devido ao impacto da própria ordem no mercado.
+   * Isso pode ser modelado como:
+     * Um custo percentual fixo sobre a parte da ordem que excede um `threshold` de volume no candle.
+     * Um modelo de impacto mais sofisticado, como o de Kyle (assumindo a estimativa da liquidez).
+
+5. **Simulação de Funding Rates (para Famílias de Carry/Basis)**
+
+   * Para estratégias que, no futuro, incluam derivativos (como futuros perpétuos), a simulação de custos deve incluir as **taxas de financiamento (funding rates)**.
+   * O backtester precisará de um histórico de funding rates por par e exchange.
+   * O P&L do backtest será ajustado debitando/creditando as taxas de funding ao longo do período em que a posição simulada estiver aberta.
 
 Todos esses elementos são configuráveis por cenário de backtest e podem ser ajustados para diferentes **“níveis de conservadorismo”** (mais ou menos pessimista em relação a custos e slippage).
 
@@ -1745,9 +1910,44 @@ Essa evolução é incremental: o núcleo do core loop permanece o mesmo, com a 
 
 ---
 
+### 15.3.1. Detalhes da Agregação de Risco Multi-Exchange
+
+Conforme o **ADR-011**, os limites de risco são aplicados de forma agregada por ativo canônico. A implementação dessa visão holística requer soluções para três desafios principais: mapeamento de ativos, conversão de moeda e sincronização de dados.
+
+1.  **Mapeamento Canônico de Ativos:**
+    *   **Problema:** Símbolos variam entre exchanges (ex: `BTCUSDT` vs `XBT/USD`).
+    *   **Solução:** O sistema utiliza um **arquivo de mapeamento canônico** (`canonical_assets.json`) curado manualmente e versionado. Este arquivo é a fonte da verdade para a identidade dos ativos.
+        ```json
+        {
+          "BTC": {
+            "description": "Bitcoin",
+            "mappings": {
+              "binance_spot": ["BTCUSDT", "BTCEUR"],
+              "kraken_spot": ["XBT/USD", "XBT/EUR"]
+            }
+          }
+        }
+        ```
+    *   **Governança:** A decisão de mapear ativos complexos (forks, rebrands) é um processo de governança manual, não uma automação. Ativos não presentes no mapa canônico não são negociáveis.
+
+2.  **Agregação em Moeda de Referência:**
+    *   **Problema:** Como somar a exposição de uma posição em `EUR` com uma em `USDT`.
+    *   **Solução:**
+        1.  O sistema define uma **moeda de referência global** (ex: `USD`).
+        2.  Um módulo `FXRatesProvider` busca taxas de câmbio em tempo real (ex: `EUR/USD`, `USDT/USD`) a partir de fontes confiáveis (pares líquidos na própria exchange ou APIs externas).
+        3.  O módulo de risco converte a exposição de cada posição para a moeda de referência antes de somá-las, garantindo que o limite de risco agregado seja aplicado sobre uma base consistente.
+
+3.  **Tratamento de Latência e Dados Obsoletos (Stale Data):**
+    *   **Problema:** Dados de uma exchange podem chegar com atraso em relação a outra.
+    *   **Solução:**
+        1.  Cada dado de mercado possui um `timestamp`. O módulo de risco agregado só utiliza dados dentro de uma **janela de tolerância** configurável (ex: `max_age_seconds = 5`).
+        2.  Se o dado de uma exchange estiver obsoleto, o sistema adota uma **visão conservadora**: utiliza o último preço válido conhecido e pode aplicar um fator de incerteza ao cálculo de risco para aquela parcela da posição, gerando um alerta de `STALE_DATA_RISK`.
+
+---
+
 ### 15.4. Gestão de Estado
 
-A gestão de estado é um pilar da robustez do sistema, garantindo consistência, auditabilidade e recuperação segura. A arquitetura se baseia em um `PortfolioState` como fonte única da verdade, com atualizações atômicas e reconciliação contínua.
+A gestão de estado é um pilar da robustez do sistema, garantindo consistência, auditabilidade e recuperação segura. A arquitetura se baseia em um `PortfolioState` como fonte única da verdade, com atualizações atômicas e reconciliação contínua. A complexidade deste módulo é um risco em si, mitigado por princípios rigorosos:
 
 1.  **`PortfolioState` como Fonte Única da Verdade (SSOT):**
     *   Um objeto central, mantido em memória para acesso rápido e persistido em banco, que encapsula todo o estado relevante: posições, saldos, ordens abertas, P&L e status de risco.
@@ -1758,29 +1958,40 @@ A gestão de estado é um pilar da robustez do sistema, garantindo consistência
     *   Apenas um componente (o `StateManager`) tem permissão para escrever no estado.
     *   Outros componentes (ex: `Execution` com um novo `fill`, `Risk` com um `circuit breaker`) publicam eventos em um **Event Bus** interno (ex: `asyncio.Queue`). O `StateManager` consome esses eventos sequencialmente e aplica as atualizações de forma atômica.
 
-3.  **Persistência em Camadas:**
+3.  **Invariantes de Estado:**
+    *   O `StateManager` deve validar um conjunto de **invariantes** a cada mudança de estado. Uma falha em um invariante gera um alerta `CRITICAL` e coloca o sistema em `Safe Mode`. Exemplos de invariantes:
+        *   `sum(fills.quantity)` de um ativo deve ser igual à `position.quantity`.
+        *   O capital total (`equity`) deve ser igual à soma do `cash` mais o valor nocional de todas as posições.
+        *   Nenhuma quantidade ou preço pode ser negativo.
+
+4.  **Persistência em Camadas:**
     *   **Journal de Transações:** Cada evento que modifica o estado é primeiro escrito em um log de transações (journal) para garantir durabilidade (Write-Ahead Logging).
     *   **Banco de Dados Transacional (SQLite):** Após o journal, o estado consolidado é atualizado no banco de dados SQLite, que serve como a camada de persistência principal para recuperação.
     *   **Snapshots Periódicos:** Para acelerar a recuperação, snapshots completos do `PortfolioState` são salvos em disco (ex: em formato Parquet) em intervalos regulares.
 
-4.  **Reconciliação com a Exchange:**
-    *   Periodicamente (e sempre no restart), um processo de **reconciliação** compara o `PortfolioState` interno com o estado real da conta na exchange.
+5.  **Princípio de "Reconciliation First":**
+    *   Na inicialização ou após uma recuperação, o sistema **sempre** inicia em um modo de "somente reconciliação" antes de começar a operar.
+    *   **Fluxo de Boot:**
+        1.  Carrega o último estado local persistido.
+        2.  Pausa a geração de novas ordens.
+        3.  Conecta-se à exchange e compara o estado local com o estado real (posições e ordens abertas).
+        4.  Se houver divergências, o estado da exchange prevalece. O estado local é ajustado para corresponder à realidade, e um relatório de reconciliação é gerado para o operador.
+        5.  Apenas após uma reconciliação bem-sucedida, o sistema é autorizado a entrar em modo `paper` ou `live`.
+
+6.  **Reconciliação Contínua:**
+    *   Periodicamente (ex: a cada 15 minutos), um processo de reconciliação em background re-valida o estado para detectar desvios sutis que possam ocorrer durante a operação.
     *   **Posições Órfãs:** Posições existentes na exchange mas não no estado local são identificadas, registradas com um `reason_code: RECOVERED_ORPHAN` e incorporadas ao estado.
     *   **Posições Fantasma:** Posições existentes no estado local mas não na exchange são removidas, e um alerta `CRITICAL` é gerado, pois isso pode indicar uma perda não registrada.
-    *   **Divergências:** Para qualquer divergência, **o estado da exchange prevalece**. O estado local é ajustado para corresponder à realidade, e o evento é logado para auditoria.
-
-   * Isso garante:
-
-     * Recuperação após falhas ou restart;
-     * Base histórica consistente para auditoria.
-
-3. **Reconciliation com a Exchange**
 
 ---
 
 ### 15.5. Failover e Recuperação
 
-O sistema é projetado para ser resiliente a falhas de processo e de rede. Ele inclui mecanismos de recuperação de estado, reconciliação com a exchange e políticas de retry/backoff.
+O sistema é projetado para ser resiliente a falhas de processo e de rede, mitigando o risco de Ponto Único de Falha (SPOF) do modelo single-node. A estratégia de resiliência, detalhada no **ADR-014**, se baseia em:
+
+1.  **Replicação de Estado em Tempo Real:** Uso do **Litestream** para replicar continuamente o banco de dados SQLite para um armazenamento de objetos (S3), garantindo um RPO (Recovery Point Objective) de segundos.
+2.  **Recuperação Rápida:** Em caso de falha do nó, o estado pode ser restaurado rapidamente em uma nova instância, com um RTO (Recovery Time Objective) de minutos.
+3.  **Reconciliação Automática:** Após a restauração, o sistema reconcilia o estado local com o da exchange para garantir consistência antes de retomar as operações.
 
 Os procedimentos detalhados de recuperação para operadores estão documentados no **OPERATIONS_RUNBOOK.md**.
 
@@ -1888,19 +2099,103 @@ Com essa estrutura de **Execução em Produção e Core Loop**, o sistema busca 
 
 ---
 
-### 15.8. Gerenciamento de Rate Limits e Saúde do Sistema
+### 15.8. Gerenciamento de Rate Limits e Saúde do Sistema (ADR-016)
 
-O sistema gerencia proativamente os **rate limits** da exchange através de mecanismos como Token Bucket, backoff exponencial e throttling.
+O gerenciamento de rate limits é crítico para a estabilidade operacional. O sistema implementa uma **estratégia de defesa em três camadas** para evitar bloqueios pela exchange.
 
-A saúde do sistema é monitorada continuamente via **heartbeats** do core loop e **health checks** periódicos que verificam conectividade, atualidade dos dados e recursos do sistema.
+#### 15.8.1. Camada 1: Centralização e Deduplicação de Requisições
 
-Os procedimentos operacionais para lidar com alertas de rate limit e falhas de health check estão descritos no **OPERATIONS_RUNBOOK.md**.
+*   **Problema:** Múltiplas estratégias podem precisar do mesmo dado ao mesmo tempo, gerando chamadas redundantes à API.
+*   **Solução:** Um `DataOrchestrator` centraliza todas as solicitações de dados. Se cinco estratégias pedem o candle de `BTC/USDT` em `1h`, o orquestrador faz **uma única chamada** à API e distribui o resultado para as cinco, eliminando o desperdício de rate limits.
+
+#### 15.8.2. Camada 2: Controle Proativo com Token Bucket
+
+*   **Problema:** Mesmo com a deduplicação, a frequência de chamadas pode exceder os limites da exchange.
+*   **Solução:** O `ExchangeAdapter` implementa o algoritmo **Token Bucket** para cada classe de endpoint (ex: `klines`, `order`, `account`).
+    *   Cada "bucket" é configurado com a capacidade e a taxa de recarga correspondentes aos limites oficiais da exchange.
+    *   Antes de cada chamada à API, o sistema tenta "consumir" um token do bucket apropriado. Se o bucket estiver vazio, a chamada é adiada de forma assíncrona até que um novo token esteja disponível.
+    *   Isso garante que o sistema se autorregule e opere proativamente dentro dos limites.
+
+#### 15.8.3. Camada 3: Reação a Falhas com Backoff Exponencial
+
+*   **Problema:** Em casos raros (ex: picos de carga, limites dinâmicos não documentados), o sistema ainda pode receber um erro de rate limit (HTTP `429` ou `418`).
+*   **Solução:** Ao detectar um desses erros, um mecanismo de **backoff exponencial** é acionado para a classe de endpoint afetada.
+    *   As requisições para aquele endpoint são pausadas.
+    *   As tentativas são retomadas em intervalos crescentes (ex: 1s, 2s, 4s, 8s...), dando tempo para a API se recuperar e evitando agravar o problema.
+
+A saúde do sistema é monitorada continuamente via **heartbeats** do core loop e **health checks** periódicos que verificam conectividade, atualidade dos dados e recursos do sistema. Os procedimentos operacionais para lidar com alertas de rate limit e falhas de health check estão descritos no **OPERATIONS_RUNBOOK.md**.
+
+---
+
+### 15.9. Estratégia de Execução de Ordens
+
+A camada de execução é projetada para ser robusta, segura e realista, tanto em simulação quanto em produção. A estratégia aborda os tipos de ordem, o tratamento de slippage e a modelagem de microestrutura.
+
+#### 15.9.1. Tipos de Ordem e Lógica de Uso
+
+O sistema utiliza uma combinação de tipos de ordem para equilibrar controle de preço e certeza de execução:
+
+1.  **Ordens `Limit` (Padrão para Entradas/Saídas):**
+    *   **Uso:** Padrão para todas as operações de rebalanceamento e entradas/saídas de rotina.
+    *   **Lógica:** O preço limite é definido com uma pequena "agressividade" em relação ao preço de referência (ex: `mid_price + N * tick_size` para uma compra), funcionando como uma **Marketable Limit Order**. Isso oferece um controle sobre o pior preço aceitável, ao mesmo tempo que aumenta a probabilidade de execução rápida.
+
+2.  **Ordens `Market` (Urgência e Risco):**
+    *   **Uso:** Reservadas para situações onde a **certeza de execução imediata é mais importante que o preço**.
+    *   **Cenários:**
+        *   Saídas de stop-loss acionadas pelo módulo de risco.
+        *   Fechamento forçado de posições devido a eventos críticos (ex: delisting de um ativo).
+        *   Acionamento de um `circuit breaker` global que exige a liquidação imediata de posições.
+
+3.  **Smart Execution (Roadmap Futuro):**
+    *   Lógicas de execução mais avançadas (TWAP, VWAP, Iceberg) não fazem parte do MVP, mas a arquitetura de `TradingPort` permite a adição de um `SmartExecutionAdapter` no futuro.
+
+#### 15.9.2. Tratamento Sistemático de Slippage
+
+O slippage é tratado de forma consistente através de um ciclo de modelagem, medição e feedback.
+
+*   **No Backtest (Modelagem):** Conforme a seção `14.3`, o `TradingPortSimulado` aplica um custo de slippage configurável, que pode ser:
+    *   **Fixo:** Um valor em bps (ex: 5 bps).
+    *   **Dinâmico:** Proporcional à volatilidade recente (ATR) e/ou ao tamanho da ordem em relação ao volume do candle, simulando o impacto no preço.
+
+*   **Em Produção (Medição e Alerta):**
+    *   **Métrica:** Para cada `fill`, o sistema calcula o slippage real: `preço_executado - preço_referência_no_momento_da_decisão`.
+    *   **Feedback Loop:** Esta métrica é um KPI fundamental. Se o slippage médio de uma estratégia exceder consistentemente um limiar, um alerta é gerado. Isso indica que a estratégia pode ser inviável ou que o modelo de slippage do backtest precisa ser re-calibrado para refletir a realidade.
+
+#### 15.9.3. Simulação de Microestrutura no Backtest
+
+Para aumentar a fidelidade dos backtests, o `TradingPortSimulado` implementa uma simulação básica de microestrutura:
+
+*   **Simulação de Spread:** Ordens de compra são executadas em um `ask` simulado e ordens de venda em um `bid` simulado, em vez de um único preço de referência. Esse spread pode ser fixo ou dinâmico.
+*   **Simulação de Impacto de Preço:** Ordens que representam uma fração significativa do volume do candle sofrem um slippage maior, simulando o impacto que uma ordem grande teria no mercado.
+*   **Limitação de Liquidez:** O simulador pode ser configurado para limitar o volume máximo executável em um único candle, forçando a execução de ordens grandes ao longo de múltiplos períodos, o que é crucial para simular a operação em ativos de menor liquidez.
+
+Essa abordagem garante que os resultados do backtest sejam muito mais realistas e conservadores, reduzindo a divergência entre o desempenho simulado e o real.
 
 ---
 
 ## 16. Observabilidade e Telemetria
 
 A camada de **Observabilidade e Telemetria** é transversal e visa responder o que está acontecendo, o que aconteceu e por que o sistema tomou certas decisões. Ela permite operação com detecção precoce de problemas, análise pós-mortem e auditoria completa.
+
+### 16.1. Stack de Tecnologia
+
+A stack de tecnologia para observabilidade é projetada para ser simples e eficaz em um ambiente single-node, com uma evolução clara.
+
+*   **Fase 1 (MVP - Minimalista):**
+    *   **Logs:** Arquivos JSON estruturados com rotação local (`logrotate`). Simples, robusto e fácil de inspecionar com ferramentas como `jq`.
+    *   **Métricas:** Um endpoint HTTP (`/metrics`) exposto pelo processo principal no formato de exposição do **Prometheus**.
+    *   **Visualização:** Análise offline de logs e métricas ou dashboards simples construídos com ferramentas que possam consumir o endpoint de métricas.
+
+*   **Fase 2+ (Stack Local Completa):**
+    *   **Coleta de Métricas:** **Prometheus**, rodando em um container Docker, configurado para "scrapear" o endpoint `/metrics` do sistema.
+    *   **Visualização e Alertas:** **Grafana**, rodando em um container Docker, conectado ao Prometheus para criar dashboards e configurar alertas.
+    *   **Agregação de Logs (Opcional):** **Loki** ou **Promtail**, rodando em um container Docker, para coletar os arquivos de log locais e permitir a consulta e correlação com métricas dentro do Grafana.
+
+Essa abordagem permite começar de forma simples e evoluir para uma stack de observabilidade padrão de mercado sem alterar o código de instrumentação do sistema.
+
+---
+
+### 16.2. Logs Estruturados
 
 Os logs são a base textual da observabilidade. No sistema, eles seguem os seguintes princípios:
 
@@ -1932,25 +2227,18 @@ Os logs são a base textual da observabilidade. No sistema, eles seguem os segui
 
 * **Proteção de Dados Sensíveis**
 
-  * Credenciais, tokens, chaves de API, e qualquer dado sensível **nunca** são logados em claro.
-  * Campos potencialmente sensíveis são mascarados ou omitidos.
+  * Credenciais, tokens e chaves de API **nunca** são logados em claro.
 
-* **Destino e Retenção**
+* **Política de Retenção de Logs**
 
-  * Logs são direcionados para:
-
-    * Arquivos locais com rotação (log rotation);
-    * Ou coletor centralizado (stack de observabilidade, se disponível).
-  * Políticas de retenção são definidas por criticidade:
-
-    * Logs de auditoria e risco tendem a ter retenção mais longa;
-    * Logs de debug detalhado têm retenção curta.
+  * A retenção segue a **Política de Gerenciamento de Artefatos (Seção 21)**, que define um ciclo de vida Hot/Warm/Cold:
+    * **Hot (SSD Local):** Últimos 7 dias, para análise de incidentes recentes.
+    * **Warm (HDD Local):** 7 a 90 dias, para análises de médio prazo.
+    * **Cold (Nuvem/Arquivo):** 1 a 5 anos, para auditoria e conformidade.
 
 ---
 
-### 16.2. Métricas de Sistema
-
-As **métricas de sistema** medem a saúde e a capacidade da infraestrutura em single node, permitindo identificar gargalos e prevenir quedas.
+### 16.3. Métricas Mínimas (MVP) e de Sistema
 
 Principais grupos de métricas:
 
@@ -1979,9 +2267,9 @@ Essas métricas são publicadas em formato adequado para consumo por uma base de
 
 ---
 
-### 16.3. Métricas de Negócio
+### 16.4. Métricas de Negócio
 
-As **métricas de negócio** respondem à pergunta: “do ponto de vista de trading, o que está acontecendo com o portfólio?”.
+As **métricas de negócio** respondem à pergunta: “Do ponto de vista de trading, o que está acontecendo com o portfólio?”. O conjunto mínimo para o MVP inclui:
 
 Principais métricas:
 
@@ -2029,16 +2317,13 @@ Essas métricas permitem identificar rapidamente estratégias degradando, famíl
 
 ---
 
-### 16.4. Dashboards e Alertas
+### 16.5. Dashboards e Alertas
 
 A partir de logs e métricas, são construídos **dashboards** e **alertas automáticos** que suportam operação e tomada de decisão.
 
 #### Dashboards
 
 A stack de observabilidade evolui com o projeto:
-
-*   **Fase 1 (Minimalista):** Logs estruturados em JSON e métricas exportadas para arquivos CSV para análise offline.
-*   **Fase 2+ (Stack Local):** Introdução de **Prometheus + Grafana** (rodando localmente via Docker) para dashboards em tempo real e alertas robustos.
 
 Os painéis principais em Grafana incluem:
 
@@ -2093,7 +2378,7 @@ Os alertas são enviados para canais configuráveis (por exemplo, Telegram, e-ma
 
 ---
 
-### 16.5. Tracing de Estratégias
+### 16.6. Tracing de Estratégias
 
 O **Tracing** permite seguir a cadeia de decisão (dado -> sinal -> risco -> ordem -> P&L) usando `trace_id` para correlacionar eventos. Cada ciclo de decisão é associado a um `trace_id`, que também registra as versões de código e configuração da estratégia.
 * **Registro de Decisões Intermediárias**
@@ -2119,7 +2404,7 @@ Isso é crucial para:
 
 ---
 
-### 16.6. Auditoria de Decisões de Trading
+### 16.7. Auditoria de Decisões de Trading
 
 A **auditoria** é a camada que transforma logs e traces em um **registro formal e navegável** das decisões mais importantes do sistema.
 
@@ -2260,25 +2545,24 @@ Todas essas etapas são registradas na camada de auditoria (seção 16) com time
 
 ---
 
-### 17.2. Versionamento de Estratégias e Configurações
+### 17.2. Versionamento e Armazenamento de Configurações (ADR-018)
 
-O versionamento de estratégias (`strategy_version`) e configurações (`config_version`) é crucial. A `strategy_version` muda com alterações na lógica ou dependências de dados. A `config_version` rastreia mudanças em parâmetros, mercados e flags. A combinação de ambas define um comportamento completo e rastreável para cada execução.
+O versionamento é crucial para a reprodutibilidade e governança. O sistema adota um modelo híbrido para gerenciar as versões de código e de configuração.
 
-Além do código, há a **configuração**, que também é versionada:
+*   **`strategy_version` (Versão do Código):** Refere-se à versão da lógica da estratégia. É diretamente ligada à versão do código-fonte, gerenciada por tags no Git (ex: `v1.2.0`).
 
-* `config_version` (por exemplo, `TSM_BTCUSDT_1D_config_v2`);
-* Inclui:
+*   **`config_version` (Versão da Configuração):** Refere-se à versão dos parâmetros de uma instância de estratégia. É um campo dentro do arquivo de configuração YAML (ex: `version: "2.1"`).
 
-  * Parâmetros (lookbacks, thresholds, limites locais de risco);
-  * Universo de mercados/timeframes;
-  * Flags de ativação/desativação.
+A combinação `strategy_version + config_version` define um comportamento completo e auditável.
 
-A combinação `strategy_version + config_version` define **um comportamento completo** da instância.
-Qualquer backtest ou execução em produção referencia ambos, por exemplo:
+#### 17.2.1. Modelo de Armazenamento Híbrido
 
-> “Run #123 – TSM_BTCUSDT_1D – strategy_version 1.0.3 – config_version v2 – período 2020–2024”.
+1.  **Git como Fonte da Verdade (SSOT):** Todos os arquivos de configuração são armazenados e revisados no Git. Esta é a camada de governança humana.
+2.  **SQLite como Registro Operacional:** Na inicialização, o sistema varre o diretório de configurações, valida cada arquivo e armazena seu conteúdo em uma tabela `execution_configs`. Esta tabela serve como um registro histórico de todas as configurações válidas que o sistema já executou, permitindo consultas rápidas em tempo de execução.
 
-As mudanças de configuração relevantes (especialmente de risco) são logadas como eventos de governança e podem requerer aprovação adicional.
+Qualquer backtest ou execução em produção referencia a combinação de versões, por exemplo:
+
+> "Run #123 – `strategy_id`: TSM_BTCUSDT_1D, `strategy_version`: 1.0.3, `config_version`: 2.1 – Período: 2020–2024"
 
 ---
 
@@ -2488,16 +2772,11 @@ Com essa camada de **Governança de Estratégias e Change Management**, o sistem
 
 A camada de **Segurança e Compliance** foca em proteger capital, credenciais e dados, seguindo o princípio de **Security by Design**. A gestão de segredos, como API keys, é um ponto crítico.
 
-Principais práticas:
+Conforme definido no **ADR-015**, a gestão de segredos segue uma abordagem de duas camadas:
 
 * **Segregação entre código e segredos**
-
-  * API keys, tokens e senhas **não são armazenados em repositórios de código**.
-  * São carregados via:
-
-    * Variáveis de ambiente;
-    * Arquivos de configuração **criptografados**;
-    * Ou soluções de secrets vault (quando disponíveis).
+  * **Desenvolvimento:** Os segredos são carregados a partir de um arquivo `.env` local, que é incluído no `.gitignore`.
+  * **Produção:** Os segredos são gerenciados no **GitHub Actions Secrets**. Durante o deploy, eles são injetados como variáveis de ambiente no processo da aplicação. A aplicação lê as credenciais dessas variáveis, falhando na inicialização se não estiverem presentes.
 
 * **Princípio do Menor Privilégio**
 
@@ -2754,6 +3033,20 @@ Os procedimentos detalhados para operadores estão no **OPERATIONS_RUNBOOK.md**.
 
 ---
 
+### 18.9. Maturidade Operacional e o "Zero-Touch"
+
+O princípio de **"Zero-Touch Operation"** (ADR-001) é um objetivo de maturidade, não um estado inicial. A jornada para alcançá-lo é progressiva:
+
+1.  **Nível 1: Runbook Manual:** Procedimentos de resposta a incidentes são documentados e executados manualmente por um operador. Esta é a base para garantir que existe um processo correto e testado.
+
+2.  **Nível 2: Scripts de Automação:** Os procedimentos do runbook são encapsulados em scripts automatizados (ex: `disaster-recovery.sh`, `reconcile-and-restart.sh`). O operador executa um único comando em vez de uma sequência de passos, reduzindo o risco de erro.
+
+3.  **Nível 3: Orquestração Automática:** O próprio sistema detecta cenários de falha (ex: falha persistente de health check, corrupção de estado) e dispara os scripts de automação relevantes, como entrar em **Modo Seguro** ou iniciar um processo de failover. A intervenção humana se torna focada na análise da causa raiz e na autorização para retomar as operações normais.
+
+O `OPERATIONS_RUNBOOK.md` reflete essa evolução, descrevendo tanto as ações automáticas do sistema quanto os procedimentos de fallback (manuais ou via script) para o operador.
+
+---
+
 Com esse conjunto de práticas e mecanismos, a camada de **Segurança e Compliance** garante que o sistema:
 
 * Proteja as credenciais e o capital sob gestão;
@@ -2766,6 +3059,34 @@ Com esse conjunto de práticas e mecanismos, a camada de **Segurança e Complian
 ## 19. Roadmap de Evolução
 
 O Roadmap de Evolução define a progressão do sistema em fases lógicas, desde um protótipo até um framework maduro, multi-família e multi-ativo.
+
+### Fase 3: Automação Avançada e Inteligência Operacional
+
+*   **Framework de Testes de Carga e Benchmarking:**
+    *   **O que é:** Implementar o framework de testes de carga descrito na seção 20.2. O objetivo é criar um processo automatizado para estressar o sistema e quantificar sua capacidade máxima no hardware de referência.
+    *   **Benefício:** Permite tomar decisões de design e otimização baseadas em dados, além de definir limites operacionais realistas para o número de estratégias em produção.
+
+Nesta fase, o foco se desloca da construção de funcionalidades básicas para a automação de processos operacionais e de análise, tornando o sistema mais autônomo e resiliente.
+
+*   **Rotação Automatizada de API Keys:**
+    *   **O que é:** Implementar um script que, a cada 30 dias (período de renovação da Binance), automaticamente gera novas API keys, as testa em um ambiente seguro (testnet ou com uma ordem mínima) e as atualiza na configuração de segredos do sistema, revogando as antigas.
+    *   **Benefício:** Aumenta drasticamente a segurança, eliminando o risco associado a chaves estáticas de longa duração.
+
+*   **Alertas Interativos para Reconciliação:**
+    *   **O que é:** Evoluir o alerta de "posição órfã detectada" (posição existe na exchange mas não no estado local). O alerta enviado via Telegram terá botões de ação rápida como "Aceitar como nova posição" ou "Fechar a mercado".
+    *   **Benefício:** Reduz o tempo de resposta a inconsistências de estado, permitindo que o operador resolva o problema com um único clique, sem acesso manual à exchange ou ao servidor.
+
+*   **Relatórios de Performance Automatizados:**
+    *   **O que é:** Um job agendado que gera automaticamente um relatório semanal de performance por família de estratégias, consolidando métricas chave (P&L, Sharpe, Drawdown) e o envia em formato PDF para um canal do Telegram.
+    *   **Benefício:** Sistematiza a revisão de performance, garantindo que os stakeholders tenham visibilidade constante sobre os resultados.
+
+*   **Validação Contínua com Walk-Forward Automatizado:**
+    *   **O que é:** Um processo mensal que executa automaticamente uma análise de Walk-Forward para todas as estratégias em modo `live`.
+    *   **Benefício:** Detecta proativamente a degradação de performance de uma estratégia. Se a performance na última janela "out-of-sample" for X% pior que a média das janelas anteriores, um alerta é gerado para revisão.
+
+*   **Pausa Automática de Estratégias em Regimes Adversos:**
+    *   **O que é:** Implementar um script específico para a família TSM que detecta períodos de "whipsaw" (mercado lateral e volátil, prejudicial para seguidores de tendência). Ao detectar esse regime, a instância da estratégia é automaticamente pausada por N horas.
+    *   **Benefício:** Cria um "hedge de regime" automatizado, protegendo o capital da família TSM durante seus piores períodos de performance esperada.
 
 ---
 
@@ -2781,9 +3102,37 @@ Esta seção define o ambiente e os processos para garantir um desenvolvimento d
 
 ### 20.2. Testes Automatizados
 
-*   **Testes Unitários:** Utiliza-se `pytest`. Módulos críticos de domínio devem ter cobertura de testes superior a 80%.
-*   **Testes de Integração:** Testes que validam a interação entre componentes, como a comunicação com adapters de exchange (usando mocks ou a **testnet** da exchange).
-*   **Testes End-to-End (E2E):** Execução de um conjunto de **backtests de referência** que validam o pipeline completo, de dados a P&L, para garantir que mudanças no código não causem regressões inesperadas nos resultados das estratégias.
+Conforme definido no **ADR-017**, o projeto adota uma estratégia de **Pirâmide de Testes** com três camadas e critérios mínimos de qualidade.
+
+*   **Testes de Carga (Load Testing):**
+    *   **O que é:** Um conjunto de testes automatizados que executa o motor de backtest sob uma carga massiva (ex: 100+ instâncias de estratégias em múltiplos timeframes e ativos) em um ambiente que espelha o hardware de produção.
+    *   **Objetivo:** Identificar gargalos de CPU, I/O e memória, e estabelecer um benchmark quantitativo da capacidade do sistema.
+    *   **Pipeline:** Este teste é executado periodicamente (ex: semanalmente ou antes de releases maiores) para detectar regressões de performance. Os resultados (ex: tempo total de execução, uso de pico de CPU/RAM) são registrados e comparados com benchmarks anteriores.
+
+#### 20.2.1. Camada 1: Testes Unitários
+
+*   **Ferramenta:** `pytest`.
+*   **Escopo:** Funções e métodos individuais em isolamento.
+*   **Foco:** Lógica de domínio pura (cálculos de indicadores, regras de sinal, validações). Todas as dependências externas (rede, disco, APIs) são substituídas por **mocks**.
+*   **Critério Mínimo:**
+    *   Cobertura de código > 80% para módulos de domínio críticos (estratégias, risco).
+    *   Executados em cada commit no pipeline de CI.
+
+#### 20.2.2. Camada 2: Testes de Integração
+
+*   **Escopo:** Interação entre dois ou mais componentes.
+*   **Foco:**
+    *   **Adapters vs. Infraestrutura:** Validar a comunicação do `BinanceSpotAdapter` com a **Testnet da Binance**.
+    *   **Fluxo de Decisão:** Validar a cadeia `Strategy` -> `RiskModule` -> `StateManager`.
+    *   **Persistência:** Validar o ciclo de salvar/carregar estado via `SQLiteAdapter`.
+*   **Critério Mínimo:** Um conjunto de testes que cobre o "caminho feliz" e os principais erros para cada `Adapter`.
+
+#### 20.2.3. Camada 3: Testes End-to-End (Backtests de Regressão)
+
+*   **Escopo:** O sistema completo, de ponta a ponta, em modo de simulação.
+*   **Implementação:** Utiliza o **engine de backtest isomórfico** para executar um conjunto de **"Backtests de Referência"** (ou "Golden Backtests").
+*   **Funcionamento:** Os resultados-chave (P&L, DD) de backtests padronizados são salvos como um "snapshot". O pipeline de CI executa esses testes e falha se os novos resultados divergirem do snapshot, detectando regressões na lógica da estratégia.
+*   **Critério Mínimo:** Pelo menos um backtest de regressão para cada família de estratégia principal (TSM, Dual Momentum). Pull Requests que alteram a lógica de domínio devem passar nesses testes.
 
 ### 20.3. Pipeline de Integração e Deploy Contínuo (CI/CD)
 
